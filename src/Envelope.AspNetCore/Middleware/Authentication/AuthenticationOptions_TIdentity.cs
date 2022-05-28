@@ -14,21 +14,14 @@ using System.Security.Claims;
 
 namespace Envelope.AspNetCore.Middleware.Authentication;
 
-public enum AuthenticationType
-{
-	WindowsIntegrated,
-	Cookie,
-	Token,
-	Request
-}
-
-public class AuthenticationOptions : AuthenticationSchemeOptions
+public class AuthenticationOptions<TIdentity> : AuthenticationSchemeOptions
+	where TIdentity : struct
 {
 	public static string Scheme => AuthenticationDefaults.AuthenticationScheme;
 
-	public new AuthenticationEvents Events
+	public new AuthenticationEvents<TIdentity> Events
 	{
-		get => (AuthenticationEvents)base.Events;
+		get => (AuthenticationEvents<TIdentity>)base.Events;
 		set => base.Events = value;
 	}
 
@@ -41,7 +34,7 @@ public class AuthenticationOptions : AuthenticationSchemeOptions
 	public Func<WindowsValidatePrincipalContext, Task> OnValidateWindowsPrincipal { get; private set; }
 
 	//HttpContext context, string authenticationSchemeType, ILogger logger
-	public Func<HttpContext, string, ILogger, Task<EnvelopePrincipal>> CreateWindowsPrincipal { get; private set; }
+	public Func<HttpContext, string, ILogger, Task<EnvelopePrincipal<TIdentity>>> CreateWindowsPrincipal { get; private set; }
 
 	public bool DisableCookieAuthenticationChallenge { get; set; }
 	public CookieAuthenticationOptions CookieAuthenticationOptions { get; private set; }
@@ -53,8 +46,8 @@ public class AuthenticationOptions : AuthenticationSchemeOptions
 	public Func<CookieValidatePrincipalContext, Task> OnValidateCookiePrincipal { get; private set; }
 
 	//HttpContext context, string userName, string authenticationSchemeType, ILogger logger
-	public Func<HttpContext, string, string, ILogger, Task<EnvelopePrincipal>> RecreateCookiePrincipal { get; private set; }
-	public Func<ClaimsPrincipal, EnvelopePrincipal> ConvertCookiePrincipal { get; private set; }
+	public Func<HttpContext, string, string, ILogger, Task<EnvelopePrincipal<TIdentity>>> RecreateCookiePrincipal { get; private set; }
+	public Func<ClaimsPrincipal, EnvelopePrincipal<TIdentity>> ConvertCookiePrincipal { get; private set; }
 
 	public bool DisableTokenAuthenticationChallenge { get; set; }
 	public JwtBearerOptions TokenAuthenticationOptions { get; private set; }
@@ -62,17 +55,17 @@ public class AuthenticationOptions : AuthenticationSchemeOptions
 	public Func<TokenValidatedContext, Task> OnValidateTokenPrincipal { get; private set; }
 
 	//HttpContext context, string userName, string authenticationSchemeType, ILogger logger
-	public Func<HttpContext, string, string, ILogger, EnvelopePrincipal> RecreateTokenPrincipal { get; private set; }
-	public Func<ClaimsPrincipal, EnvelopePrincipal> ConvertTokenPrincipal { get; private set; }
+	public Func<HttpContext, string, string, ILogger, EnvelopePrincipal<TIdentity>> RecreateTokenPrincipal { get; private set; }
+	public Func<ClaimsPrincipal, EnvelopePrincipal<TIdentity>> ConvertTokenPrincipal { get; private set; }
 
 	public RequestAuthenticationOptions RequestAuthenticationOptions { get; private set; }
 	public bool UseRequestAuthentication => RequestAuthenticationOptions != null;
 	public Func<RequestValidatePrincipalContext, Task> OnValidateRequestPrincipal { get; private set; }
 
 	//HttpContext context, string authenticationSchemeType, ILogger logger
-	public Func<HttpContext, string, ILogger, Task<EnvelopePrincipal>> CreateRequestPrincipal { get; private set; }
+	public Func<HttpContext, string, ILogger, Task<EnvelopePrincipal<TIdentity>>> CreateRequestPrincipal { get; private set; }
 
-	public AuthenticationOptions SetWindowsAuthentication(WindowsAuthenticationOptions options, Func<WindowsValidatePrincipalContext, Task> onValidatePrincipal)
+	public AuthenticationOptions<TIdentity> SetWindowsAuthentication(WindowsAuthenticationOptions options, Func<WindowsValidatePrincipalContext, Task> onValidatePrincipal)
 	{
 		AddAuthentication(AuthenticationType.WindowsIntegrated);
 		WindowsAuthenticationOptions = options ?? throw new ArgumentNullException(nameof(options));
@@ -80,7 +73,7 @@ public class AuthenticationOptions : AuthenticationSchemeOptions
 		return this;
 	}
 
-	public AuthenticationOptions SetWindowsAuthentication(Func<HttpContext, string, ILogger, Task<EnvelopePrincipal>> createPrincipal, bool disableWindowsAuthenticationChallenge = false)
+	public AuthenticationOptions<TIdentity> SetWindowsAuthentication(Func<HttpContext, string, ILogger, Task<EnvelopePrincipal<TIdentity>>> createPrincipal, bool disableWindowsAuthenticationChallenge = false)
 	{
 		AddAuthentication(AuthenticationType.WindowsIntegrated);
 		WindowsAuthenticationOptions = new WindowsAuthenticationOptions { DisableAuthenticationChallenge = disableWindowsAuthenticationChallenge };
@@ -94,16 +87,16 @@ public class AuthenticationOptions : AuthenticationSchemeOptions
 		return this;
 	}
 
-	public AuthenticationOptions SetCookieAuthentication(Func<CookieValidatePrincipalContext, Task> onValidatePrincipal, bool disableCookieAuthenticationChallenge = false)
+	public AuthenticationOptions<TIdentity> SetCookieAuthentication(Func<CookieValidatePrincipalContext, Task> onValidatePrincipal, bool disableCookieAuthenticationChallenge = false)
 		=> SetCookieAuthentication(new CookieAuthenticationOptions(), onValidatePrincipal, disableCookieAuthenticationChallenge);
 
-	public AuthenticationOptions SetCookieAuthenticationReplacePrincipal(Func<HttpContext, string, string, ILogger, Task<EnvelopePrincipal>> recreatePrincipal, bool disableCookieAuthenticationChallenge = false)
+	public AuthenticationOptions<TIdentity> SetCookieAuthenticationReplacePrincipal(Func<HttpContext, string, string, ILogger, Task<EnvelopePrincipal<TIdentity>>> recreatePrincipal, bool disableCookieAuthenticationChallenge = false)
 		=> SetCookieAuthenticationReplacePrincipal(new CookieAuthenticationOptions(), recreatePrincipal, disableCookieAuthenticationChallenge);
 
-	public AuthenticationOptions SetCookieAuthenticationConvertPrincipal(Func<ClaimsPrincipal, EnvelopePrincipal> convertPrincipal, bool disableCookieAuthenticationChallenge = false)
+	public AuthenticationOptions<TIdentity> SetCookieAuthenticationConvertPrincipal(Func<ClaimsPrincipal, EnvelopePrincipal<TIdentity>> convertPrincipal, bool disableCookieAuthenticationChallenge = false)
 		=> SetCookieAuthenticationConvertPrincipal(new CookieAuthenticationOptions(), convertPrincipal, disableCookieAuthenticationChallenge);
 
-	public AuthenticationOptions SetCookieAuthentication(CookieAuthenticationOptions options, Func<CookieValidatePrincipalContext, Task> onValidatePrincipal, bool disableCookieAuthenticationChallenge = false)
+	public AuthenticationOptions<TIdentity> SetCookieAuthentication(CookieAuthenticationOptions options, Func<CookieValidatePrincipalContext, Task> onValidatePrincipal, bool disableCookieAuthenticationChallenge = false)
 	{
 		AddAuthentication(AuthenticationType.Cookie);
 		CookieAuthenticationOptions = options ?? throw new ArgumentNullException(nameof(options));
@@ -112,7 +105,7 @@ public class AuthenticationOptions : AuthenticationSchemeOptions
 		return this;
 	}
 
-	public AuthenticationOptions SetCookieAuthenticationReplacePrincipal(CookieAuthenticationOptions options, Func<HttpContext, string, string, ILogger, Task<EnvelopePrincipal>> recreatePrincipal, bool disableCookieAuthenticationChallenge = false)
+	public AuthenticationOptions<TIdentity> SetCookieAuthenticationReplacePrincipal(CookieAuthenticationOptions options, Func<HttpContext, string, string, ILogger, Task<EnvelopePrincipal<TIdentity>>> recreatePrincipal, bool disableCookieAuthenticationChallenge = false)
 	{
 		AddAuthentication(AuthenticationType.Cookie);
 		CookieAuthenticationOptions = options ?? throw new ArgumentNullException(nameof(options));
@@ -127,7 +120,7 @@ public class AuthenticationOptions : AuthenticationSchemeOptions
 		return this;
 	}
 
-	public AuthenticationOptions SetCookieAuthenticationConvertPrincipal(CookieAuthenticationOptions options, Func<ClaimsPrincipal, EnvelopePrincipal> convertPrincipal, bool disableCookieAuthenticationChallenge = false)
+	public AuthenticationOptions<TIdentity> SetCookieAuthenticationConvertPrincipal(CookieAuthenticationOptions options, Func<ClaimsPrincipal, EnvelopePrincipal<TIdentity>> convertPrincipal, bool disableCookieAuthenticationChallenge = false)
 	{
 		AddAuthentication(AuthenticationType.Cookie);
 		CookieAuthenticationOptions = options ?? throw new ArgumentNullException(nameof(options));
@@ -144,13 +137,13 @@ public class AuthenticationOptions : AuthenticationSchemeOptions
 		return this;
 	}
 
-	public AuthenticationOptions SetCookieName(string cookieName)
+	public AuthenticationOptions<TIdentity> SetCookieName(string cookieName)
 	{
 		_cookieName = cookieName;
 		return this;
 	}
 
-	public AuthenticationOptions SetTokenAuthentication(TokenValidationParameters tokenValidationParameters, Func<TokenValidatedContext, Task> onValidatePrincipal, bool disableTokenAuthenticationChallenge = false)
+	public AuthenticationOptions<TIdentity> SetTokenAuthentication(TokenValidationParameters tokenValidationParameters, Func<TokenValidatedContext, Task> onValidatePrincipal, bool disableTokenAuthenticationChallenge = false)
 	{
 		return SetTokenAuthentication(
 			new JwtBearerOptions
@@ -161,7 +154,7 @@ public class AuthenticationOptions : AuthenticationSchemeOptions
 			disableTokenAuthenticationChallenge);
 	}
 
-	public AuthenticationOptions SetTokenAuthenticationReplacePrincipal(TokenValidationParameters tokenValidationParameters, Func<HttpContext, string, string, ILogger, EnvelopePrincipal> recreatePrincipal, bool disableTokenAuthenticationChallenge = false)
+	public AuthenticationOptions<TIdentity> SetTokenAuthenticationReplacePrincipal(TokenValidationParameters tokenValidationParameters, Func<HttpContext, string, string, ILogger, EnvelopePrincipal<TIdentity>> recreatePrincipal, bool disableTokenAuthenticationChallenge = false)
 	{
 		return SetTokenAuthenticationReplacePrincipal(
 			new JwtBearerOptions
@@ -172,7 +165,7 @@ public class AuthenticationOptions : AuthenticationSchemeOptions
 			disableTokenAuthenticationChallenge);
 	}
 
-	public AuthenticationOptions SetTokenAuthenticationConvertPrincipal(TokenValidationParameters tokenValidationParameters, Func<ClaimsPrincipal, EnvelopePrincipal> convertPrincipal, bool disableTokenAuthenticationChallenge = false)
+	public AuthenticationOptions<TIdentity> SetTokenAuthenticationConvertPrincipal(TokenValidationParameters tokenValidationParameters, Func<ClaimsPrincipal, EnvelopePrincipal<TIdentity>> convertPrincipal, bool disableTokenAuthenticationChallenge = false)
 	{
 		return SetTokenAuthenticationConvertPrincipal(
 			new JwtBearerOptions
@@ -183,7 +176,7 @@ public class AuthenticationOptions : AuthenticationSchemeOptions
 			disableTokenAuthenticationChallenge);
 	}
 
-	public AuthenticationOptions SetTokenAuthentication(JwtBearerOptions options, Func<TokenValidatedContext, Task> onValidatePrincipal, bool disableTokenAuthenticationChallenge = false)
+	public AuthenticationOptions<TIdentity> SetTokenAuthentication(JwtBearerOptions options, Func<TokenValidatedContext, Task> onValidatePrincipal, bool disableTokenAuthenticationChallenge = false)
 	{
 		AddAuthentication(AuthenticationType.Token);
 		TokenAuthenticationOptions = options ?? throw new ArgumentNullException(nameof(options));
@@ -192,7 +185,7 @@ public class AuthenticationOptions : AuthenticationSchemeOptions
 		return this;
 	}
 
-	public AuthenticationOptions SetTokenAuthenticationReplacePrincipal(JwtBearerOptions options, Func<HttpContext, string, string, ILogger, EnvelopePrincipal> recreatePrincipal, bool disableTokenAuthenticationChallenge = false)
+	public AuthenticationOptions<TIdentity> SetTokenAuthenticationReplacePrincipal(JwtBearerOptions options, Func<HttpContext, string, string, ILogger, EnvelopePrincipal<TIdentity>> recreatePrincipal, bool disableTokenAuthenticationChallenge = false)
 	{
 		AddAuthentication(AuthenticationType.Token);
 		TokenAuthenticationOptions = options ?? throw new ArgumentNullException(nameof(options));
@@ -209,7 +202,7 @@ public class AuthenticationOptions : AuthenticationSchemeOptions
 		return this;
 	}
 
-	public AuthenticationOptions SetTokenAuthenticationConvertPrincipal(JwtBearerOptions options, Func<ClaimsPrincipal, EnvelopePrincipal> convertPrincipal, bool disableTokenAuthenticationChallenge = false)
+	public AuthenticationOptions<TIdentity> SetTokenAuthenticationConvertPrincipal(JwtBearerOptions options, Func<ClaimsPrincipal, EnvelopePrincipal<TIdentity>> convertPrincipal, bool disableTokenAuthenticationChallenge = false)
 	{
 		AddAuthentication(AuthenticationType.Token);
 		TokenAuthenticationOptions = options ?? throw new ArgumentNullException(nameof(options));
@@ -226,7 +219,7 @@ public class AuthenticationOptions : AuthenticationSchemeOptions
 		return this;
 	}
 
-	public AuthenticationOptions SetRequestAuthentication(RequestAuthenticationOptions options, Func<RequestValidatePrincipalContext, Task> onValidatePrincipal)
+	public AuthenticationOptions<TIdentity> SetRequestAuthentication(RequestAuthenticationOptions options, Func<RequestValidatePrincipalContext, Task> onValidatePrincipal)
 	{
 		AddAuthentication(AuthenticationType.Request);
 		RequestAuthenticationOptions = options ?? throw new ArgumentNullException(nameof(options));
@@ -234,7 +227,7 @@ public class AuthenticationOptions : AuthenticationSchemeOptions
 		return this;
 	}
 
-	public AuthenticationOptions SetRequestAuthentication(Func<HttpContext, string, ILogger, Task<EnvelopePrincipal>> createPrincipal, bool disableRequestAuthenticationChallenge = false, List<string> anonymousUrlPathPrefixes = null)
+	public AuthenticationOptions<TIdentity> SetRequestAuthentication(Func<HttpContext, string, ILogger, Task<EnvelopePrincipal<TIdentity>>> createPrincipal, bool disableRequestAuthenticationChallenge = false, List<string> anonymousUrlPathPrefixes = null)
 	{
 		AddAuthentication(AuthenticationType.Request);
 		RequestAuthenticationOptions = new RequestAuthenticationOptions { DisableAuthenticationChallenge = disableRequestAuthenticationChallenge, AnonymousUrlPathPrefixes = anonymousUrlPathPrefixes?.Select(x => x.ToLowerInvariant()).ToList() };
@@ -248,7 +241,7 @@ public class AuthenticationOptions : AuthenticationSchemeOptions
 		return this;
 	}
 
-	public AuthenticationOptions SetAuthenticationFlowFallback(AuthenticationType fallback)
+	public AuthenticationOptions<TIdentity> SetAuthenticationFlowFallback(AuthenticationType fallback)
 	{
 		AuthenticationFlowFallback = fallback;
 		return this;

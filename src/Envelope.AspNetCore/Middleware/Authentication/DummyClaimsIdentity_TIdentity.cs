@@ -5,9 +5,10 @@ using System.Security.Claims;
 
 namespace Envelope.AspNetCore.Middleware.Authentication;
 
-public class DummyClaimsIdentity
+public class DummyClaimsIdentity<TIdentity>
+	where TIdentity : struct
 {
-	public Guid Identifier { get; set; }
+	public TIdentity Identifier { get; set; }
 	public string Name { get; set; }
 	public string DisplayName { get; set; }
 	public object UserData { get; }
@@ -17,24 +18,24 @@ public class DummyClaimsIdentity
 
 	}
 
-	public EnvelopePrincipal CreateEnvelopePrincipal(string authenticationSchemeType)
+	public EnvelopePrincipal<TIdentity> CreateEnvelopePrincipal(string authenticationSchemeType)
 	{
 		var claimsIdentity = new ClaimsIdentity(authenticationSchemeType);
 		claimsIdentity.AddClaim(new Claim(ClaimTypes.Name, Name));
 
-		var identity = new EnvelopeIdentity(
+		var identity = new EnvelopeIdentity<TIdentity>(
 			claimsIdentity,
 			Identifier,
 			Name,
 			DisplayName,
 			UserData,
 			new List<string> { "Role1" },
-			new List<Guid> { default },
+			new List<TIdentity> { default },
 			new List<string>() { "action1" },
-			new List<Guid> { default },
+			new List<TIdentity> { default },
 			false,
 			false);
 
-		return new EnvelopePrincipal(identity);
+		return new EnvelopePrincipal<TIdentity>(identity);
 	}
 }

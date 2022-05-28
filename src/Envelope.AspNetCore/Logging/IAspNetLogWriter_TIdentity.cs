@@ -3,9 +3,10 @@ using Envelope.Web.Logging;
 
 namespace Envelope.AspNetCore.Logging;
 
-public interface IAspNetLogWriter : IDisposable
+public interface IAspNetLogWriter<TIdentity> : IDisposable
+	where TIdentity : struct
 {
 	void WriteRequest(RequestDto request);
-	void WriteRequestAuthentication(RequestAuthentication requestAuthentication);
+	void WriteRequestAuthentication(RequestAuthentication<TIdentity> requestAuthentication);
 	void WriteResponse(ResponseDto response);
 }

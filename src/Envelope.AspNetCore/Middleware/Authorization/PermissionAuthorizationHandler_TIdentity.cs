@@ -4,7 +4,8 @@ using Microsoft.Extensions.Options;
 
 namespace Envelope.AspNetCore.Middleware.Authorization;
 
-public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionAuthorizationRequirement>
+public class PermissionAuthorizationHandler<TIdentity> : AuthorizationHandler<PermissionAuthorizationRequirement>
+	where TIdentity : struct
 {
 	private readonly PermissionAuthorizationOptions _options;
 
@@ -17,14 +18,14 @@ public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionAut
 		AuthorizationHandlerContext context,
 		PermissionAuthorizationRequirement requirement)
 	{
-		if (context.User is EnvelopePrincipal principal)
+		if (context.User is EnvelopePrincipal<TIdentity> principal)
 		{
 			var hasPermission = _options.UseIntPermissions
 				? principal.HasAnyPermissionClaim(
 						requirement
 							.Tokens
 							.Where(x => x != null)
-							.Select(x => (Guid)x)
+							.Select(x => (TIdentity)x)
 							.ToArray())
 				: principal.HasAnyPermissionClaim(
 						requirement

@@ -8,14 +8,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Envelope.AspNetCore.Middleware.Authentication.Events;
 
-public class AuthenticationEvents
+public class AuthenticationEvents<TIdentity>
+	where TIdentity : struct
 {
 	public WindowsAuthenticationEvents WindowsEvents { get; }
 	public CookieAuthenticationEvents CookieEvents { get; }
 	public JwtBearerEvents TokenEvents { get; }
 	public RequestAuthenticationEvents RequestEvents { get; }
 
-	public AuthenticationEvents(HttpContext context, AuthenticationOptions options)
+	public AuthenticationEvents(HttpContext context, AuthenticationOptions<TIdentity> options)
 	{
 		if (options.UseWindowsAuthentication)
 		{
@@ -57,4 +58,4 @@ public class AuthenticationEvents
 			RequestEvents ??= new RequestAuthenticationEvents();
 		}
 	}
-    }
+}

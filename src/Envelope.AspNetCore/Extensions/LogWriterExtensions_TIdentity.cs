@@ -5,17 +5,18 @@ namespace Envelope.AspNetCore.Extensions;
 
 public static partial class LogWriterExtensions
 {
-	public static LogWriterConfiguration ConfigureAspNetLogWriter(
+	public static LogWriterConfiguration ConfigureAspNetLogWriter<TIdentity>(
 		this LogWriterConfiguration loggerConfiguration,
-		Action<AspNetLogWriterConfiguration> configuration)
+		Action<AspNetLogWriterConfiguration<TIdentity>> configuration)
+		where TIdentity : struct
 	{
 		if (configuration != null)
 		{
-			var aspNetLogWriterConfiguration = new AspNetLogWriterConfiguration();
+			var aspNetLogWriterConfiguration = new AspNetLogWriterConfiguration<TIdentity>();
 			configuration.Invoke(aspNetLogWriterConfiguration);
 			var writer = aspNetLogWriterConfiguration.CreateAspNetLogWriter();
 			if (writer != null)
-				AspNetLogWriter.Instance = writer;
+				AspNetLogWriter<TIdentity>.Instance = writer;
 		}
 
 		return loggerConfiguration;

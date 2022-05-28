@@ -8,10 +8,9 @@ using Microsoft.AspNetCore.Builder;
 
 namespace Envelope.AspNetCore.Extensions;
 
-public static class ApplicationBuilderExtensions
+public static partial class ApplicationBuilderExtensions
 {
-	public static IApplicationBuilder UseEnvelopeAspNetCore<TIdentity>(this IApplicationBuilder app)
-		where TIdentity : struct
+	public static IApplicationBuilder UseEnvelopeAspNetCore(this IApplicationBuilder app)
 	{
 		if (app == null)
 			throw new ArgumentNullException(nameof(app));
@@ -22,38 +21,35 @@ public static class ApplicationBuilderExtensions
 
 		DbLogWriter.Instance.WriteEnvironmentInfo();
 
-		app.UseMiddleware<RequestInitializationMiddleware<TIdentity>>();
+		app.UseMiddleware<RequestInitializationMiddleware>();
 
 		return app;
 	}
 
-	public static IApplicationBuilder UseEnvelopeExceptionHandler<TIdentity>(this IApplicationBuilder app)
-		where TIdentity : struct
+	public static IApplicationBuilder UseEnvelopeExceptionHandler(this IApplicationBuilder app)
 	{
 		if (app == null)
 			throw new ArgumentNullException(nameof(app));
 
-		app.UseMiddleware<ExceptionHandlerMiddleware<TIdentity>>();
+		app.UseMiddleware<ExceptionHandlerMiddleware>();
 		return app;
 	}
 
-	public static IApplicationBuilder UseEnvelopeHostNormalizer<TIdentity>(this IApplicationBuilder app)
-		where TIdentity : struct
+	public static IApplicationBuilder UseEnvelopeHostNormalizer(this IApplicationBuilder app)
 	{
 		if (app == null)
 			throw new ArgumentNullException(nameof(app));
 
-		app.UseMiddleware<HostNormalizerMiddleware<TIdentity>>();
+		app.UseMiddleware<HostNormalizerMiddleware>();
 		return app;
 	}
 
-	public static IApplicationBuilder UseEnvelopeRequestTracking<TIdentity>(this IApplicationBuilder app)
-		where TIdentity : struct
+	public static IApplicationBuilder UseEnvelopeRequestTracking(this IApplicationBuilder app)
 	{
 		if (app == null)
 			throw new ArgumentNullException(nameof(app));
 
-		app.UseMiddleware<RequestTrackingMiddleware<TIdentity>>();
+		app.UseMiddleware<RequestTrackingMiddleware>();
 		return app;
 	}
 

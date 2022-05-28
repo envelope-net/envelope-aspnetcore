@@ -16,10 +16,11 @@ namespace Envelope.AspNetCore.Logging.PostgreSql.Sink;
 		.WriteTo.Console())
  */
 
-public class DBRequestAuthenticationSink : DbBatchWriter<LogEvent>, ILogEventSink, IDisposable
+public class DBRequestAuthenticationSink<TIdentity> : DbBatchWriter<LogEvent>, ILogEventSink, IDisposable
+	where TIdentity : struct
 {
-	public DBRequestAuthenticationSink(DBRequestAuthenticationSinkOptions options, Action<string, object?, object?, object?>? errorLogger = null)
-		: base(options ?? new DBRequestAuthenticationSinkOptions(), errorLogger ?? SelfLog.WriteLine)
+	public DBRequestAuthenticationSink(DBRequestAuthenticationSinkOptions<TIdentity> options, Action<string, object?, object?, object?>? errorLogger = null)
+		: base(options ?? new DBRequestAuthenticationSinkOptions<TIdentity>(), errorLogger ?? SelfLog.WriteLine)
 	{
 	}
 

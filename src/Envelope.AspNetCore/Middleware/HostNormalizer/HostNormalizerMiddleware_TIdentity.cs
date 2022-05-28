@@ -8,7 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Envelope.AspNetCore.Middleware.HostNormalizer;
 
-public class HostNormalizerMiddleware
+public class HostNormalizerMiddleware<TIdentity>
+	where TIdentity : struct
 {
 	private readonly RequestDelegate _next;
 	private readonly HostNormalizerOptions _options;
@@ -17,7 +18,7 @@ public class HostNormalizerMiddleware
 	public HostNormalizerMiddleware(
 		RequestDelegate next,
 		IOptions<HostNormalizerOptions> options,
-		ILogger<HostNormalizerMiddleware> logger)
+		ILogger<HostNormalizerMiddleware<TIdentity>> logger)
 	{
 		_next = next ?? throw new ArgumentNullException(nameof(next));
 		_options = options?.Value ?? throw new ArgumentNullException(nameof(options));
@@ -26,7 +27,7 @@ public class HostNormalizerMiddleware
 
 	public async Task InvokeAsync(HttpContext context)
 	{
-		var ac = context.RequestServices.GetRequiredService<IApplicationContext>();
+		var ac = context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 		var traceInfo = ac.AddTraceFrame(TraceFrame.Create());
 
 		try

@@ -15,7 +15,8 @@ using Envelope.Converters;
 
 namespace Envelope.AspNetCore.Authentication;
 
-public static class AuthenticationService
+public static class AuthenticationService<TIdentity>
+	where TIdentity : struct
 {
 	private static Dictionary<string, string>? _cookieDataProtectionPurposes; //Dictionary<cookieName, purpose>
 	private static bool _dataProtectorsCreated = false;
@@ -82,11 +83,11 @@ public static class AuthenticationService
 	private static ILogger GetLogger(HttpContext context)
 	{
 		var loggerFactory = context.RequestServices.GetRequiredService<ILoggerFactory>();
-		var logger = loggerFactory.CreateLogger(typeof(AuthenticationService).FullName!);
+		var logger = loggerFactory.CreateLogger(typeof(AuthenticationService<TIdentity>).FullName!);
 		return logger;
 	}
 
-	public static async Task<EnvelopePrincipal?> CreateFromWindowsIdentityAsync(HttpContext context, string authenticationSchemeType, bool allowStaticLogin)
+	public static async Task<EnvelopePrincipal<TIdentity>?> CreateFromWindowsIdentityAsync(HttpContext context, string authenticationSchemeType, bool allowStaticLogin)
 	{
 		if (!OperatingSystem.IsWindows())
 			return null;
@@ -105,16 +106,16 @@ public static class AuthenticationService
 		IIdentity? identity = null;
 		string? logonWithoutDomain;
 		string? windowsIdentityName = null;
-		AuthenticatedUser? user = null;
+		AuthenticatedUser<TIdentity>? user = null;
 
-		IAuthenticationManager? authenticationManager = null;
-		var applicationContext = context.RequestServices.GetRequiredService<IApplicationContext>();
+		IAuthenticationManager<TIdentity>? authenticationManager = null;
+		var applicationContext = context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 		if (windowsPrincipal?.Identity is WindowsIdentity windowsIdentity)
 		{
 			logonWithoutDomain = windowsIdentity.GetLogonNameWithoutDomain().ToLower();
 			windowsIdentityName = windowsIdentity.Name.ToLower();
 
-			authenticationManager = context.RequestServices.GetRequiredService<IAuthenticationManager>();
+			authenticationManager = context.RequestServices.GetRequiredService<IAuthenticationManager<TIdentity>>();
 			user = await authenticationManager.CreateFromWindowsIdentityAsync(logonWithoutDomain, windowsIdentityName, applicationContext.RequestMetadata).ConfigureAwait(false);
 		}
 
@@ -131,7 +132,7 @@ public static class AuthenticationService
 		return CreateEnvelopePrincipal(identity, user, true, true, /*logger,*/ applicationContext, authenticationManager);
 	}
 
-	public static async Task<EnvelopePrincipal?> CreateFromRequestAsync(HttpContext context, string authenticationSchemeType)
+	public static async Task<EnvelopePrincipal<TIdentity>?> CreateFromRequestAsync(HttpContext context, string authenticationSchemeType)
 	{
 		if (context == null)
 			throw new ArgumentNullException(nameof(context));
@@ -143,8 +144,8 @@ public static class AuthenticationService
 		//	logger = GetLogger(context);
 
 		IIdentity? identity = null;
-		var authenticationManager = context.RequestServices.GetRequiredService<IAuthenticationManager>();
-		var applicationContext = context.RequestServices.GetRequiredService<IApplicationContext>();
+		var authenticationManager = context.RequestServices.GetRequiredService<IAuthenticationManager<TIdentity>>();
+		var applicationContext = context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 
 		var user = await authenticationManager.CreateFromRequestAsync(applicationContext.RequestMetadata).ConfigureAwait(false);
 
@@ -158,7 +159,7 @@ public static class AuthenticationService
 		return CreateEnvelopePrincipal(identity, user, true, true, /*logger,*/ applicationContext, authenticationManager);
 	}
 
-	public static async Task<EnvelopePrincipal?> CreateStaticAsync(HttpContext context, string authenticationSchemeType, bool allowStaticLogin)
+	public static async Task<EnvelopePrincipal<TIdentity>?> CreateStaticAsync(HttpContext context, string authenticationSchemeType, bool allowStaticLogin)
 	{
 		if (!allowStaticLogin)
 			return null;
@@ -173,10 +174,10 @@ public static class AuthenticationService
 		//	logger = GetLogger(context);
 
 		IIdentity? identity = null;
-		AuthenticatedUser? user = null;
+		AuthenticatedUser<TIdentity>? user = null;
 
-		var authenticationManager = context.RequestServices.GetRequiredService<IAuthenticationManager>();
-		var applicationContext = context.RequestServices.GetRequiredService<IApplicationContext>();
+		var authenticationManager = context.RequestServices.GetRequiredService<IAuthenticationManager<TIdentity>>();
+		var applicationContext = context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 		if (authenticationManager.StaticUserId.HasValue)
 			user = await authenticationManager.CreateFromUserIdAsync(authenticationManager.StaticUserId, applicationContext.RequestMetadata).ConfigureAwait(false);
 
@@ -190,7 +191,7 @@ public static class AuthenticationService
 		return CreateEnvelopePrincipal(identity, user, true, true, /*logger,*/ applicationContext, authenticationManager);
 	}
 
-	public static async Task<EnvelopePrincipal?> RenewTokenIdentityAsync(HttpContext context, ClaimsPrincipal? principal, ILogger? logger)
+	public static async Task<EnvelopePrincipal<TIdentity>?> RenewTokenIdentityAsync(HttpContext context, ClaimsPrincipal? principal, ILogger? logger)
 	{
 		if (principal == null)
 			return null;
@@ -204,17 +205,17 @@ public static class AuthenticationService
 		var userIdClaim =
 			principal
 				.Claims
-				.FirstOrDefault(c => EnvelopeIdentity.IsEnvelopeClaim(c)
-					&& string.Equals(c.Type, EnvelopeIdentity.USER_ID_CLAIM_NAME, StringComparison.OrdinalIgnoreCase));
+				.FirstOrDefault(c => EnvelopeIdentity<TIdentity>.IsEnvelopeClaim(c)
+					&& string.Equals(c.Type, EnvelopeIdentity<TIdentity>.USER_ID_CLAIM_NAME, StringComparison.OrdinalIgnoreCase));
 
-		if (userIdClaim == null || !ConverterHelper.TryConvertFrom(userIdClaim.Value, out Guid userId))
+		if (userIdClaim == null || !ConverterHelper.TryConvertFrom(userIdClaim.Value, out TIdentity userId))
 			return null;
 
 		var loginClaim =
 			principal
 				.Claims
-				.FirstOrDefault(c => EnvelopeIdentity.IsEnvelopeClaim(c)
-					&& string.Equals(c.Type, EnvelopeIdentity.LOGIN_CLAIM_NAME, StringComparison.OrdinalIgnoreCase));
+				.FirstOrDefault(c => EnvelopeIdentity<TIdentity>.IsEnvelopeClaim(c)
+					&& string.Equals(c.Type, EnvelopeIdentity<TIdentity>.LOGIN_CLAIM_NAME, StringComparison.OrdinalIgnoreCase));
 
 		if (loginClaim == null)
 			return null;
@@ -222,8 +223,8 @@ public static class AuthenticationService
 		var displayNameClaim =
 			principal
 				.Claims
-				.FirstOrDefault(c => EnvelopeIdentity.IsEnvelopeClaim(c)
-					&& string.Equals(c.Type, EnvelopeIdentity.DISPLAYNAME_CLAIM_NAME, StringComparison.OrdinalIgnoreCase));
+				.FirstOrDefault(c => EnvelopeIdentity<TIdentity>.IsEnvelopeClaim(c)
+					&& string.Equals(c.Type, EnvelopeIdentity<TIdentity>.DISPLAYNAME_CLAIM_NAME, StringComparison.OrdinalIgnoreCase));
 
 		if (displayNameClaim == null)
 			return null;
@@ -231,26 +232,26 @@ public static class AuthenticationService
 		var roleClaims =
 			principal
 				.Claims
-				.Where(c => EnvelopeIdentity.IsEnvelopeClaim(c)
-					&& string.Equals(c.Type, EnvelopeIdentity.ROLE_CLAIM_NAME, StringComparison.OrdinalIgnoreCase));
+				.Where(c => EnvelopeIdentity<TIdentity>.IsEnvelopeClaim(c)
+					&& string.Equals(c.Type, EnvelopeIdentity<TIdentity>.ROLE_CLAIM_NAME, StringComparison.OrdinalIgnoreCase));
 
 		var roleIdClaims =
 			principal
 				.Claims
-				.Where(c => EnvelopeIdentity.IsEnvelopeClaim(c)
-					&& string.Equals(c.Type, EnvelopeIdentity.ROLE_ID_CLAIM_NAME, StringComparison.OrdinalIgnoreCase));
+				.Where(c => EnvelopeIdentity<TIdentity>.IsEnvelopeClaim(c)
+					&& string.Equals(c.Type, EnvelopeIdentity<TIdentity>.ROLE_ID_CLAIM_NAME, StringComparison.OrdinalIgnoreCase));
 
 		var premissionClaims =
 			principal
 				.Claims
-				.Where(c => EnvelopeIdentity.IsEnvelopeClaim(c)
-					&& string.Equals(c.Type, EnvelopeIdentity.PERMISSION_CLAIM_NAME, StringComparison.OrdinalIgnoreCase));
+				.Where(c => EnvelopeIdentity<TIdentity>.IsEnvelopeClaim(c)
+					&& string.Equals(c.Type, EnvelopeIdentity<TIdentity>.PERMISSION_CLAIM_NAME, StringComparison.OrdinalIgnoreCase));
 
-		var applicationContext = context.RequestServices.GetRequiredService<IApplicationContext>();
+		var applicationContext = context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 
-		var roleIds = roleIdClaims?.Select(c => ConverterHelper.ConvertFrom<Guid>(c.Value)).ToList();
+		var roleIds = roleIdClaims?.Select(c => ConverterHelper.ConvertFrom<TIdentity>(c.Value)).ToList();
 
-		var user = new AuthenticatedUser(userId, loginClaim.Value, displayNameClaim.Value, applicationContext.Next())
+		var user = new AuthenticatedUser<TIdentity>(userId, loginClaim.Value, displayNameClaim.Value, applicationContext.Next())
 		{
 			UserData = null,
 			Roles = roleClaims?.Select(c => c.Value).ToList(),
@@ -258,13 +259,13 @@ public static class AuthenticationService
 			Permissions = premissionClaims?.Select(c => c.Value).ToList()
 		};
 
-		var authenticationManager = context.RequestServices.GetRequiredService<IAuthenticationManager>();
+		var authenticationManager = context.RequestServices.GetRequiredService<IAuthenticationManager<TIdentity>>();
 		user = await authenticationManager.SetUserDataAsync(user, applicationContext.RequestMetadata, roleIds).ConfigureAwait(false);
-		
+
 		return CreateEnvelopePrincipal(principal.Identity, user, true, true, /*logger,*/ applicationContext, authenticationManager);
 	}
 
-	public static async Task<EnvelopePrincipal?> CreateIdentityAsync(HttpContext context, string? login, string? password, string authenticationSchemeType /*, out string? error, out string? passwordTemporaryUrlSlug*/)
+	public static async Task<EnvelopePrincipal<TIdentity>?> CreateIdentityAsync(HttpContext context, string? login, string? password, string authenticationSchemeType /*, out string? error, out string? passwordTemporaryUrlSlug*/)
 	{
 		//error = null;
 		//passwordTemporaryUrlSlug = null;
@@ -281,13 +282,13 @@ public static class AuthenticationService
 		//if (logger == null)
 		//	logger = GetLogger(context);
 
-		var authenticationManager = context.RequestServices.GetRequiredService<IAuthenticationManager>();
+		var authenticationManager = context.RequestServices.GetRequiredService<IAuthenticationManager<TIdentity>>();
 		var user = await authenticationManager.CreateFromLoginPasswordAsync(login, password).ConfigureAwait(false);
 		if (user == null)
 			return null;
 
 		var success = PasswordHelper.VerifyHashedPassword(user.Password, user.Salt, password);
-		var applicationContext = context.RequestServices.GetRequiredService<IApplicationContext>();
+		var applicationContext = context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 
 		if (success)
 		{
@@ -307,7 +308,7 @@ public static class AuthenticationService
 		return CreateEnvelopePrincipal(claimsIdentity, user, false, false, /*logger,*/ applicationContext, authenticationManager);
 	}
 
-	public static async Task<EnvelopePrincipal?> RecreateCookieIdentityAsync(HttpContext context, string? userName, string authenticationSchemeType)
+	public static async Task<EnvelopePrincipal<TIdentity>?> RecreateCookieIdentityAsync(HttpContext context, string? userName, string authenticationSchemeType)
 	{
 		if (string.IsNullOrWhiteSpace(userName))
 			return null;
@@ -321,8 +322,8 @@ public static class AuthenticationService
 		//if (logger == null)
 		//	logger = GetLogger(context);
 
-		var authenticationManager = context.RequestServices.GetRequiredService<IAuthenticationManager>();
-		var applicationContext = context.RequestServices.GetRequiredService<IApplicationContext>();
+		var authenticationManager = context.RequestServices.GetRequiredService<IAuthenticationManager<TIdentity>>();
+		var applicationContext = context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 		var user = await authenticationManager.CreateFromLoginAsync(userName.ToLower(), applicationContext.RequestMetadata).ConfigureAwait(false);
 		var claimsIdentity = new ClaimsIdentity(authenticationSchemeType);
 		claimsIdentity.AddClaim(new Claim(ClaimTypes.Name, userName));
@@ -397,9 +398,9 @@ public static class AuthenticationService
 
 	#endregion withhout HttpContext
 
-	public static EnvelopePrincipal CreateAnonymousUser(string authenticationSchemeType, string sourceSystemName)
+	public static EnvelopePrincipal<TIdentity> CreateAnonymousUser(string authenticationSchemeType, string sourceSystemName)
 	{
-		var user = new Envelope.Identity.AnonymousUser(TraceInfo.Create(sourceSystemName));
+		var user = new Envelope.Identity.AnonymousUser<TIdentity>(TraceInfo<TIdentity>.Create(sourceSystemName));
 
 		var claimsIdentity = new ClaimsIdentity(authenticationSchemeType);
 		claimsIdentity.AddClaim(new Claim(ClaimTypes.Name, user.Login));
@@ -410,18 +411,18 @@ public static class AuthenticationService
 
 	[return: NotNullIfNotNull("identity")]
 	[return: NotNullIfNotNull("authenticatedUser")]
-	private static EnvelopePrincipal? CreateEnvelopePrincipal(
+	private static EnvelopePrincipal<TIdentity>? CreateEnvelopePrincipal(
 		IIdentity? identity,
-		AuthenticatedUser? authenticatedUser,
+		AuthenticatedUser<TIdentity>? authenticatedUser,
 		bool rolesToClams,
 		bool permissionsToClaims,
-		IApplicationContext? applicationContext,
-		IAuthenticationManager? authenticationManager)
+		IApplicationContext<TIdentity>? applicationContext,
+		IAuthenticationManager<TIdentity>? authenticationManager)
 	{
 		if (identity == null || authenticatedUser == null)
 			return null;
 
-		var EnvelopeIdentity = new EnvelopeIdentity(
+		var EnvelopeIdentity = new EnvelopeIdentity<TIdentity>(
 			identity,
 			authenticatedUser.UserId,
 			authenticatedUser.Login,
@@ -436,7 +437,7 @@ public static class AuthenticationService
 
 		if (authenticationManager?.LogRequestAuthentication ?? false)
 		{
-			AspNetLogWriter.Instance.WriteRequestAuthentication(new Logging.Dto.RequestAuthentication
+			AspNetLogWriter<TIdentity>.Instance.WriteRequestAuthentication(new Logging.Dto.RequestAuthentication<TIdentity>
 			{
 				CorrelationId = authenticatedUser.TraceInfo.CorrelationId,
 				ExternalCorrelationId = authenticatedUser.TraceInfo.ExternalCorrelationId,
@@ -454,10 +455,10 @@ public static class AuthenticationService
 			});
 		}
 
-		var EnvelopePrincipal = new EnvelopePrincipal(EnvelopeIdentity);
+		var EnvelopePrincipal = new EnvelopePrincipal<TIdentity>(EnvelopeIdentity);
 
 		if (applicationContext != null)
-			applicationContext.AddTraceFrame(TraceInfo.Create(authenticatedUser.TraceInfo).TraceFrame, EnvelopePrincipal);
+			applicationContext.AddTraceFrame(TraceInfo<TIdentity>.Create(authenticatedUser.TraceInfo).TraceFrame, EnvelopePrincipal);
 
 		return EnvelopePrincipal;
 	}
