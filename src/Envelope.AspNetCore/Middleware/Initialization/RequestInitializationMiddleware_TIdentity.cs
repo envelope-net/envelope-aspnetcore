@@ -9,16 +9,17 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Envelope.AspNetCore.Middleware.Initialization;
 
-public class RequestInitializationMiddleware
+public class RequestInitializationMiddleware<TIdentity>
+	where TIdentity : struct
 {
 	private readonly RequestDelegate _next;
-	private readonly RequestInitializationOptions _options;
+	private readonly RequestInitializationOptions<TIdentity> _options;
 	private readonly ILogger _logger;
 
 	public RequestInitializationMiddleware(
 		RequestDelegate next,
-		IOptions<RequestInitializationOptions> options,
-		ILogger<RequestInitializationMiddleware> logger)
+		IOptions<RequestInitializationOptions<TIdentity>> options,
+		ILogger<RequestInitializationMiddleware<TIdentity>> logger)
 	{
 		_next = next ?? throw new ArgumentNullException(nameof(next));
 		_options = options?.Value ?? throw new ArgumentNullException(nameof(options));
@@ -33,7 +34,7 @@ public class RequestInitializationMiddleware
 			context.TraceIdentifier = externalCorrelationId;
 		}
 
-		var appCtx = context.RequestServices.GetRequiredService<IApplicationContext>();
+		var appCtx = context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 		appCtx.AddTraceFrame(TraceFrame.Create());
 
 		if (_options.IncludeInResponse)
@@ -50,7 +51,7 @@ public class RequestInitializationMiddleware
 
 		using var disposable = _logger.BeginScope(new Dictionary<string, Guid?>
 		{
-			[nameof(ILogMessage.TraceInfo.CorrelationId)] = appCtx.TraceInfo.CorrelationId
+			[nameof(ILogMessage<TIdentity>.TraceInfo.CorrelationId)] = appCtx.TraceInfo.CorrelationId
 		});
 
 		if (_options.OnRequestInitialized != null)

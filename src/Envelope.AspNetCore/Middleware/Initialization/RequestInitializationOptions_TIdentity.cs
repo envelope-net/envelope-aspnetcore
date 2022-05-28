@@ -1,6 +1,7 @@
 ﻿namespace Envelope.AspNetCore.Middleware.Initialization;
 
-public class RequestInitializationOptions
+public class RequestInitializationOptions<TIdentity>
+	where TIdentity : struct
 {
 	public const string DefaultHeader = "X-Correlation-ID";
 
@@ -10,5 +11,5 @@ public class RequestInitializationOptions
 
 	public bool IncludeInResponse { get; set; } = true;
 
-	public Func<IApplicationContext, Task>? OnRequestInitialized { get; set; }
+	public Func<IApplicationContext<TIdentity>, Task>? OnRequestInitialized { get; set; }
 }

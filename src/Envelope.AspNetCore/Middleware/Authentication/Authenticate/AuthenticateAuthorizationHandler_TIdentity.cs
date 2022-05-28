@@ -4,7 +4,8 @@ using Microsoft.Extensions.Options;
 
 namespace Envelope.AspNetCore.Middleware.Authentication.Authenticate;
 
-public class AuthenticateAuthorizationHandler : AuthorizationHandler<AuthenticateAuthorizationRequirement>
+public class AuthenticateAuthorizationHandler<TIdentity> : AuthorizationHandler<AuthenticateAuthorizationRequirement>
+	where TIdentity : struct
 {
 	private readonly AuthenticateAuthorizationOptions _options;
 
@@ -17,7 +18,7 @@ public class AuthenticateAuthorizationHandler : AuthorizationHandler<Authenticat
 		AuthorizationHandlerContext context,
 		AuthenticateAuthorizationRequirement requirement)
 	{
-		if (context.User is EnvelopePrincipal)
+		if (context.User is EnvelopePrincipal<TIdentity>)
 		{
 			context.Succeed(requirement);
 			if (_options != null)

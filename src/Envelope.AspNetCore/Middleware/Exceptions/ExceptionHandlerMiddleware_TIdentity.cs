@@ -12,17 +12,18 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Envelope.AspNetCore.Middleware.Exceptions;
 
-public class ExceptionHandlerMiddleware
+public class ExceptionHandlerMiddleware<TIdentity>
+	where TIdentity : struct
 {
 	private readonly RequestDelegate _next;
-	private readonly ExceptionHandlerOptions _options;
+	private readonly ExceptionHandlerOptions<TIdentity> _options;
 	private readonly ILogger _logger;
 	private readonly Func<object, Task> _clearCacheHeadersDelegate;
 
 	public ExceptionHandlerMiddleware(
 		RequestDelegate next,
-		IOptions<ExceptionHandlerOptions> options,
-		ILogger<ExceptionHandlerMiddleware> logger)
+		IOptions<ExceptionHandlerOptions<TIdentity>> options,
+		ILogger<ExceptionHandlerMiddleware<TIdentity>> logger)
 	{
 		_next = next ?? throw new ArgumentNullException(nameof(next));
 		_options = options?.Value ?? throw new ArgumentNullException(nameof(options));
@@ -38,9 +39,9 @@ public class ExceptionHandlerMiddleware
 	public Task InvokeAsync(HttpContext context)
 	{
 		ExceptionDispatchInfo? edi = null;
-		var appCtx = context.RequestServices.GetRequiredService<IApplicationContext>();
+		var appCtx = context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 		var traceInfo = appCtx.AddTraceFrame(TraceFrame.Create());
-		
+
 		try
 		{
 			var task = _next(context);
@@ -62,7 +63,7 @@ public class ExceptionHandlerMiddleware
 
 		return Task.CompletedTask;
 
-		static async Task Awaited(ExceptionHandlerMiddleware middleware, ITraceInfo traceInfo, HttpContext context, Task task, ExceptionHandlerOptions options)
+		static async Task Awaited(ExceptionHandlerMiddleware<TIdentity> middleware, ITraceInfo<TIdentity> traceInfo, HttpContext context, Task task, ExceptionHandlerOptions<TIdentity> options)
 		{
 			ExceptionDispatchInfo? edi = null;
 			try
@@ -79,12 +80,12 @@ public class ExceptionHandlerMiddleware
 		}
 	}
 
-	private static bool HandleStatusCode(int statusCode, ExceptionHandlerOptions options)
+	private static bool HandleStatusCode(int statusCode, ExceptionHandlerOptions<TIdentity> options)
 		=> (options.HandleAllClientAndServerErrors && 400 <= statusCode)
 		|| (options.HandleOnlyStatusCodes != null
 			&& options.HandleOnlyStatusCodes.Contains(statusCode));
 
-	private async Task HandleExceptionAsync(ITraceInfo traceInfo, HttpContext context, ExceptionDispatchInfo? edi)
+	private async Task HandleExceptionAsync(ITraceInfo<TIdentity> traceInfo, HttpContext context, ExceptionDispatchInfo? edi)
 	{
 		var statusCode = context.Response.StatusCode;
 		var ex = edi?.SourceException;
@@ -109,7 +110,7 @@ public class ExceptionHandlerMiddleware
 		{
 			_logger.LogErrorMessage(traceInfo, x => x.InternalMessage("The response has already started, the error handler will not be executed."), true);
 			edi?.Throw();
-			
+
 			return; //if not thrown
 		}
 

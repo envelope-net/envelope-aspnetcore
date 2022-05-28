@@ -24,10 +24,10 @@ using Microsoft.AspNetCore.Http;
 namespace Envelope.AspNetCore.Middleware.Authentication;
 
 /* USAGE
- 
+
 	Startup.cs:
 	public IServiceProvider ConfigureServices(IServiceCollection services)
-	
+
 		services.AddEnvelopeAuthentication(options =>
 			options
 				.SetWindowsAuthentication(UserService.CreateFromWindowsIdentity)
@@ -58,10 +58,11 @@ namespace Envelope.AspNetCore.Middleware.Authentication;
 			);
 */
 
-public class EnvelopeAuthenticationHandler :
-	AuthenticationHandler<AuthenticationOptions>,
+public class EnvelopeAuthenticationHandler<TIdentity> :
+	AuthenticationHandler<AuthenticationOptions<TIdentity>>,
 	IAuthenticationSignInHandler,
 	IAuthenticationSignOutHandler
+	where TIdentity : struct
 {
 	private readonly ILogger _logger;
 
@@ -82,13 +83,13 @@ public class EnvelopeAuthenticationHandler :
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 	public EnvelopeAuthenticationHandler(
-		IOptionsMonitor<AuthenticationOptions> options,
+		IOptionsMonitor<AuthenticationOptions<TIdentity>> options,
 		ILoggerFactory logger,
 		UrlEncoder encoder,
 		ISystemClock clock)
 		: base(options, logger, encoder, clock)
 	{
-		_logger = logger?.CreateLogger<EnvelopeAuthenticationHandler>() ?? throw new ArgumentNullException(nameof(logger));
+		_logger = logger?.CreateLogger<EnvelopeAuthenticationHandler<TIdentity>>() ?? throw new ArgumentNullException(nameof(logger));
 	}
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
@@ -96,13 +97,13 @@ public class EnvelopeAuthenticationHandler :
 	/// The handler calls methods on the events which give the application control at certain points where processing is occurring. 
 	/// If it is not provided a default instance is supplied which does nothing when the methods are called.
 	/// </summary>
-	protected new AuthenticationEvents? Events
+	protected new AuthenticationEvents<TIdentity>? Events
 	{
-		get { return (AuthenticationEvents?)base.Events; }
+		get { return (AuthenticationEvents<TIdentity>?)base.Events; }
 		set { base.Events = value; }
 	}
 
-	protected override Task<object> CreateEventsAsync() => Task.FromResult<object>(new AuthenticationEvents(Context, Options));
+	protected override Task<object> CreateEventsAsync() => Task.FromResult<object>(new AuthenticationEvents<TIdentity>(Context, Options));
 
 	protected override Task InitializeHandlerAsync()
 	{
@@ -206,7 +207,7 @@ public class EnvelopeAuthenticationHandler :
 			return AuthenticateResult.Fail("Ticket expired");
 		}
 
-		var cookieStore = Context.RequestServices.GetService<ICookieStore>();
+		var cookieStore = Context.RequestServices.GetService<ICookieStore<TIdentity>>();
 		if (cookieStore != null)
 		{
 			var existsInStore = await cookieStore.ExistsAsync(Context, cookie).ConfigureAwait(false);
@@ -281,11 +282,11 @@ public class EnvelopeAuthenticationHandler :
 
 			await ApplyHeadersAsync(shouldRedirectToReturnUrl: false, properties: properties).ConfigureAwait(false);
 
-			var cookieStore = Context.RequestServices.GetService<ICookieStore>();
+			var cookieStore = Context.RequestServices.GetService<ICookieStore<TIdentity>>();
 			if (cookieStore != null)
 			{
-				Guid? idUser = null;
-				if (ticket.Principal is EnvelopePrincipal principal)
+				TIdentity? idUser = null;
+				if (ticket.Principal is EnvelopePrincipal<TIdentity> principal)
 					idUser = principal.IdentityBase?.UserId;
 
 				var issuedUtc = properties.IssuedUtc ?? Clock.UtcNow;
@@ -445,11 +446,11 @@ public class EnvelopeAuthenticationHandler :
 
 			await Events.CookieEvents.SignedIn(signedInContext).ConfigureAwait(false);
 
-			var cookieStore = Context.RequestServices.GetService<ICookieStore>();
+			var cookieStore = Context.RequestServices.GetService<ICookieStore<TIdentity>>();
 			if (cookieStore != null)
 			{
-				Guid? idUser = null;
-				if (user is EnvelopePrincipal principal)
+				TIdentity? idUser = null;
+				if (user is EnvelopePrincipal<TIdentity> principal)
 					idUser = principal.IdentityBase?.UserId;
 
 				await cookieStore.InsertAsync(Context, cookieValue, issuedUtc.UtcDateTime, expiresUtc.UtcDateTime, idUser).ConfigureAwait(false);
@@ -459,7 +460,7 @@ public class EnvelopeAuthenticationHandler :
 			var shouldRedirect = Options.CookieAuthenticationOptions.LoginPath.HasValue && OriginalPath == Options.CookieAuthenticationOptions.LoginPath;
 			await ApplyHeadersAsync(shouldRedirect, signedInContext.Properties).ConfigureAwait(false);
 
-			var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext>();
+			var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 			_logger.LogInformationMessage(appCtx.Next(), x => x.InternalMessage($"AuthenticationScheme: {Scheme.Name} signed in."), true);
 		}
 		else
@@ -499,7 +500,7 @@ public class EnvelopeAuthenticationHandler :
 
 			await Events.CookieEvents.SigningOut(context).ConfigureAwait(false);
 
-			var cookieStore = Context.RequestServices.GetService<ICookieStore>();
+			var cookieStore = Context.RequestServices.GetService<ICookieStore<TIdentity>>();
 			if (cookieStore != null)
 			{
 				var cookie = Options.CookieAuthenticationOptions.CookieManager.GetRequestCookie(Context, Options.CookieAuthenticationOptions.Cookie.Name);
@@ -516,7 +517,7 @@ public class EnvelopeAuthenticationHandler :
 			var shouldRedirect = Options.CookieAuthenticationOptions.LogoutPath.HasValue && OriginalPath == Options.CookieAuthenticationOptions.LogoutPath;
 			await ApplyHeadersAsync(shouldRedirect, context.Properties).ConfigureAwait(false);
 
-			var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext>();
+			var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 			_logger.LogInformationMessage(appCtx.Next(), x => x.InternalMessage($"AuthenticationScheme: {Scheme.Name} signed out."), true);
 		}
 		else
@@ -609,7 +610,7 @@ public class EnvelopeAuthenticationHandler :
 
 	protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
 	{
-		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext>();
+		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 
 		if (Options.AuthenticationFlow != null && 0 < Options.AuthenticationFlow.Count)
 		{
@@ -653,7 +654,7 @@ public class EnvelopeAuthenticationHandler :
 	{
 		if ((Options.UseWindowsAuthentication) && Context != null)
 		{
-			var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext>();
+			var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 
 			WindowsValidatePrincipalContext? context = null;
 			if (Options.WindowsAuthenticationOptions.AllowStaticLogin || IdentityHelper.IsWindowsAuthentication(Context))
@@ -667,9 +668,9 @@ public class EnvelopeAuthenticationHandler :
 
 					await Events.WindowsEvents.ValidatePrincipalAsync(context).ConfigureAwait(false);
 
-					if (context.Principal is EnvelopePrincipal principal)
+					if (context.Principal is EnvelopePrincipal<TIdentity> principal)
 					{
-						var ticket = new AuthenticationTicket(principal, AuthenticationOptions.Scheme);
+						var ticket = new AuthenticationTicket(principal, AuthenticationOptions<TIdentity>.Scheme);
 						return AuthenticateResult.Success(ticket);
 					}
 				}
@@ -685,7 +686,7 @@ public class EnvelopeAuthenticationHandler :
 				_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(AuthenticationType.WindowsIntegrated)}: {nameof(HttpContext)}.{nameof(HttpContext.User)} = {Context.User?.GetType().FullName ?? "NULL"}, {nameof(HttpContext)}.{nameof(HttpContext.User)}.{nameof(HttpContext.User.Identity)} = {Context.User?.Identity?.GetType().FullName ?? "NULL"}, Name = {Context.User?.Identity?.Name} is not {nameof(WindowsIdentity)}"), true);
 			}
 
-			_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(AuthenticationType.WindowsIntegrated)}: Principal {context?.Principal?.GetType().FullName ?? "NULL"} is not {nameof(EnvelopePrincipal)}"), true);
+			_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(AuthenticationType.WindowsIntegrated)}: Principal {context?.Principal?.GetType().FullName ?? "NULL"} is not {nameof(EnvelopePrincipal<TIdentity>)}"), true);
 
 			return AuthenticateResult.Fail("Invalid auth.");
 		}
@@ -699,7 +700,7 @@ public class EnvelopeAuthenticationHandler :
 	{
 		if (Options.UseCookieAuthentication)
 		{
-			var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext>();
+			var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 
 			var result = await EnsureCookieTicketAsync().ConfigureAwait(false);
 			if (!result.Succeeded)
@@ -718,12 +719,12 @@ public class EnvelopeAuthenticationHandler :
 
 			if (context.Principal == null)
 			{
-				_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(AuthenticationType.Cookie)}: {nameof(context.Principal)} NULL is not {nameof(EnvelopePrincipal)}"), true);
+				_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(AuthenticationType.Cookie)}: {nameof(context.Principal)} NULL is not {nameof(EnvelopePrincipal<TIdentity>)}"), true);
 				return AuthenticateResult.Fail("No principal.");
 			}
-			else if (context.Principal is not EnvelopePrincipal)
+			else if (context.Principal is not EnvelopePrincipal<TIdentity>)
 			{
-				_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(AuthenticationType.Cookie)}: {nameof(context.Principal)} {context?.Principal?.GetType().FullName ?? "NULL"} is not {nameof(EnvelopePrincipal)}"), true);
+				_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(AuthenticationType.Cookie)}: {nameof(context.Principal)} {context?.Principal?.GetType().FullName ?? "NULL"} is not {nameof(EnvelopePrincipal<TIdentity>)}"), true);
 			}
 
 			if (context.ShouldRenew)
@@ -743,7 +744,7 @@ public class EnvelopeAuthenticationHandler :
 	{
 		if (Options.UseTokenAuthentication)
 		{
-			var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext>();
+			var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 
 			string? token = null;
 			try
@@ -915,14 +916,14 @@ public class EnvelopeAuthenticationHandler :
 			if (0 < Options.RequestAuthenticationOptions?.AnonymousUrlPathPrefixes?.Count
 				&& Options.RequestAuthenticationOptions.AnonymousUrlPathPrefixes.Any(x => path.StartsWith(x)))
 			{
-				var applicationContext = Context.RequestServices.GetService<IApplicationContext>();
-				var principal = Envelope.AspNetCore.Authentication.AuthenticationService.CreateAnonymousUser(Scheme.Name, applicationContext?.SourceSystemName!);
-				var ticket = new AuthenticationTicket(principal, AuthenticationOptions.Scheme);
+				var applicationContext = Context.RequestServices.GetService<IApplicationContext<TIdentity>>();
+				var principal = Envelope.AspNetCore.Authentication.AuthenticationService<TIdentity>.CreateAnonymousUser(Scheme.Name, applicationContext?.SourceSystemName!);
+				var ticket = new AuthenticationTicket(principal, AuthenticationOptions<TIdentity>.Scheme);
 				return AuthenticateResult.Success(ticket);
 			}
 
 			RequestValidatePrincipalContext? context = null;
-			var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext>();
+			var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 
 			if (Options.RequestAuthenticationOptions == null)
 			{
@@ -939,9 +940,9 @@ public class EnvelopeAuthenticationHandler :
 
 				await Events.RequestEvents.ValidatePrincipalAsync(context).ConfigureAwait(false);
 
-				if (context.Principal is EnvelopePrincipal principal)
+				if (context.Principal is EnvelopePrincipal<TIdentity> principal)
 				{
-					var ticket = new AuthenticationTicket(principal, AuthenticationOptions.Scheme);
+					var ticket = new AuthenticationTicket(principal, AuthenticationOptions<TIdentity>.Scheme);
 					return AuthenticateResult.Success(ticket);
 				}
 			}
@@ -951,7 +952,7 @@ public class EnvelopeAuthenticationHandler :
 				ThrowAccessDenied401Unauthorized(Context, ex);
 			}
 
-			_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(AuthenticationType.Request)}: Principal {context?.Principal?.GetType().FullName ?? "NULL"} is not {nameof(EnvelopePrincipal)}"), true);
+			_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(AuthenticationType.Request)}: Principal {context?.Principal?.GetType().FullName ?? "NULL"} is not {nameof(EnvelopePrincipal<TIdentity>)}"), true);
 			return AuthenticateResult.Fail("Invalid auth.");
 		}
 		else
@@ -994,7 +995,7 @@ public class EnvelopeAuthenticationHandler :
 
 	protected async Task HandleWindowsForbiddenAsync(AuthenticationProperties properties, bool allowRedirect)
 	{
-		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext>();
+		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 		_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(HandleWindowsForbiddenAsync)} occured."), true);
 		if (Options.UseWindowsAuthentication)
 			await base.HandleForbiddenAsync(properties).ConfigureAwait(false);
@@ -1026,7 +1027,7 @@ public class EnvelopeAuthenticationHandler :
 
 	protected async Task HandleCookieForbiddenAsync(AuthenticationProperties properties, bool allowRedirect)
 	{
-		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext>();
+		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 		_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(HandleCookieForbiddenAsync)} occured."), true);
 		if (Options.UseCookieAuthentication)
 			await base.HandleForbiddenAsync(properties).ConfigureAwait(false);
@@ -1062,7 +1063,7 @@ public class EnvelopeAuthenticationHandler :
 
 	protected async Task HandleTokenForbiddenAsync(AuthenticationProperties properties, bool allowRedirect)
 	{
-		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext>();
+		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 		_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(HandleTokenForbiddenAsync)} occured."), true);
 		if (Options.UseTokenAuthentication)
 			await base.HandleForbiddenAsync(properties).ConfigureAwait(false);
@@ -1094,7 +1095,7 @@ public class EnvelopeAuthenticationHandler :
 
 	protected async Task HandleRequestForbiddenAsync(AuthenticationProperties properties, bool allowRedirect)
 	{
-		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext>();
+		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 		_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(HandleRequestForbiddenAsync)} occured."), true);
 		if (Options.UseRequestAuthentication)
 			await base.HandleForbiddenAsync(properties).ConfigureAwait(false);
@@ -1164,7 +1165,7 @@ public class EnvelopeAuthenticationHandler :
 			return;
 		}
 
-		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext>();
+		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 		_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(HandleWindowsChallengeAsync)} occured."), true);
 		if (Options.UseWindowsAuthentication)
 			await base.HandleChallengeAsync(properties).ConfigureAwait(false);
@@ -1199,7 +1200,7 @@ public class EnvelopeAuthenticationHandler :
 			return;
 		}
 
-		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext>();
+		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 		_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(HandleCookieChallengeAsync)} occured."), true);
 		if (Options.UseCookieAuthentication)
 		{
@@ -1231,7 +1232,7 @@ public class EnvelopeAuthenticationHandler :
 			return;
 		}
 
-		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext>();
+		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 		_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(HandleTokenChallengeAsync)} occured."), true);
 		if (Options.UseTokenAuthentication)
 		{
@@ -1322,7 +1323,7 @@ public class EnvelopeAuthenticationHandler :
 			return;
 		}
 
-		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext>();
+		var appCtx = Context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 		_logger.LogWarningMessage(appCtx.Next(), x => x.InternalMessage($"{nameof(HandleRequestChallengeAsync)} occured."), true);
 		if (Options.UseRequestAuthentication)
 			await base.HandleChallengeAsync(properties).ConfigureAwait(false);

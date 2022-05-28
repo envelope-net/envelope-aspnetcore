@@ -5,33 +5,32 @@ using Envelope.Database.PostgreSql;
 
 namespace Envelope.AspNetCore.Logging.PostgreSql.Sink;
 
-public class DBRequestAuthenticationSinkOptions<TIdentity> : DbBatchWriterOptions, IBatchWriterOptions
-	where TIdentity : struct
+public class DBRequestAuthenticationSinkOptions : DbBatchWriterOptions, IBatchWriterOptions
 {
 	public DBRequestAuthenticationSinkOptions()
 	{
-		TableName = nameof(RequestAuthentication<TIdentity>);
+		TableName = nameof(RequestAuthentication);
 
 		PropertyNames = new List<string>
 		{
-			nameof(RequestAuthentication<TIdentity>.RuntimeUniqueKey),
-			nameof(RequestAuthentication<TIdentity>.CreatedUtc),
-			nameof(RequestAuthentication<TIdentity>.CorrelationId),
-			nameof(RequestAuthentication<TIdentity>.ExternalCorrelationId),
-			nameof(RequestAuthentication<TIdentity>.IdUser),
-			nameof(RequestAuthentication<TIdentity>.Roles),
-			nameof(RequestAuthentication<TIdentity>.Permissions)
+			nameof(RequestAuthentication.RuntimeUniqueKey),
+			nameof(RequestAuthentication.CreatedUtc),
+			nameof(RequestAuthentication.CorrelationId),
+			nameof(RequestAuthentication.ExternalCorrelationId),
+			nameof(RequestAuthentication.IdUser),
+			nameof(RequestAuthentication.Roles),
+			nameof(RequestAuthentication.Permissions)
 		};
 
 		PropertyTypeMapping = new Dictionary<string, NpgsqlDbType>
 		{
-			{ nameof(RequestAuthentication<TIdentity>.RuntimeUniqueKey), NpgsqlDbType.Uuid },
-			{ nameof(RequestAuthentication<TIdentity>.CreatedUtc), NpgsqlDbType.TimestampTz },
-			{ nameof(RequestAuthentication<TIdentity>.CorrelationId), NpgsqlDbType.Uuid },
-			{ nameof(RequestAuthentication<TIdentity>.ExternalCorrelationId), NpgsqlDbType.Varchar },
-			{ nameof(RequestAuthentication<TIdentity>.IdUser), NpgsqlDbTypeHelper.GetNpgsqlDbType<TIdentity>() },
-			{ nameof(RequestAuthentication<TIdentity>.Roles), NpgsqlDbType.Varchar },
-			{ nameof(RequestAuthentication<TIdentity>.Permissions), NpgsqlDbType.Varchar }
+			{ nameof(RequestAuthentication.RuntimeUniqueKey), NpgsqlDbType.Uuid },
+			{ nameof(RequestAuthentication.CreatedUtc), NpgsqlDbType.TimestampTz },
+			{ nameof(RequestAuthentication.CorrelationId), NpgsqlDbType.Uuid },
+			{ nameof(RequestAuthentication.ExternalCorrelationId), NpgsqlDbType.Varchar },
+			{ nameof(RequestAuthentication.IdUser), NpgsqlDbTypeHelper.GetNpgsqlDbType<Guid>() },
+			{ nameof(RequestAuthentication.Roles), NpgsqlDbType.Varchar },
+			{ nameof(RequestAuthentication.Permissions), NpgsqlDbType.Varchar }
 		};
 	}
 }

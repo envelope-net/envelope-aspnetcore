@@ -7,7 +7,8 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace Envelope.AspNetCore.Middleware.Authorization;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-public class PermissionAuthorizationFilter : Attribute, IAsyncAuthorizationFilter, IAsyncActionFilter
+public class PermissionAuthorizationFilter<TIdentity> : Attribute, IAsyncAuthorizationFilter, IAsyncActionFilter
+	where TIdentity : struct
 {
 	private readonly IAuthorizationService _authService;
 	private readonly PermissionAuthorizationRequirement _requirement;
@@ -31,7 +32,7 @@ public class PermissionAuthorizationFilter : Attribute, IAsyncAuthorizationFilte
 
 	public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
 	{
-		if (context.HttpContext.User is EnvelopePrincipal principal)
+		if (context.HttpContext.User is EnvelopePrincipal<TIdentity> principal)
 		{
 			AuthorizationResult result = await _authService.AuthorizeAsync(principal, null!, _requirement).ConfigureAwait(false);
 

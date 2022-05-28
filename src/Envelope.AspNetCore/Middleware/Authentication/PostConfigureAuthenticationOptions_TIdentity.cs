@@ -8,7 +8,8 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace Envelope.AspNetCore.Middleware.Authentication;
 
-public class PostConfigureAuthenticationOptions : IPostConfigureOptions<AuthenticationOptions>
+public class PostConfigureAuthenticationOptions<TIdentity> : IPostConfigureOptions<AuthenticationOptions<TIdentity>>
+	where TIdentity : struct
 {
 	private readonly IDataProtectionProvider _dp;
 
@@ -17,7 +18,7 @@ public class PostConfigureAuthenticationOptions : IPostConfigureOptions<Authenti
 		_dp = dataProtection;
 	}
 
-	public void PostConfigure(string name, AuthenticationOptions options)
+	public void PostConfigure(string name, AuthenticationOptions<TIdentity> options)
 	{
 		//if (_options.VirtualPath == null)
 		//{
@@ -116,7 +117,7 @@ public class PostConfigureAuthenticationOptions : IPostConfigureOptions<Authenti
 						new HttpDocumentRetriever(httpClient) { RequireHttps = options.TokenAuthenticationOptions.RequireHttpsMetadata });
 				}
 			}
-			
+
 			if (options.TokenAuthenticationOptions.Events == null)
 				options.TokenAuthenticationOptions.Events = new JwtBearerEvents();
 

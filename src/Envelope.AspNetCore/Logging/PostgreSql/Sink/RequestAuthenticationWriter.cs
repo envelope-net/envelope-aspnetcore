@@ -4,14 +4,13 @@ using Envelope.Logging;
 
 namespace Envelope.AspNetCore.Logging.PostgreSql.Sink;
 
-public class RequestAuthenticationWriter<TIdentity> : DbBatchWriter<RequestAuthentication<TIdentity>>, IDisposable
-	where TIdentity : struct
+public class RequestAuthenticationWriter : DbBatchWriter<RequestAuthentication>, IDisposable
 {
-	public RequestAuthenticationWriter(DBRequestAuthenticationSinkOptions<TIdentity> options, Action<string, object?, object?, object?>? errorLogger = null)
-		: base(options ?? new DBRequestAuthenticationSinkOptions<TIdentity>(), errorLogger ?? DefaultErrorLoggerDelegate.Log)
+	public RequestAuthenticationWriter(DBRequestAuthenticationSinkOptions options, Action<string, object?, object?, object?>? errorLogger = null)
+		: base(options ?? new DBRequestAuthenticationSinkOptions(), errorLogger ?? DefaultErrorLoggerDelegate.Log)
 	{
 	}
 
-	public override IDictionary<string, object?>? ToDictionary(RequestAuthentication<TIdentity> requestAuthentication)
+	public override IDictionary<string, object?>? ToDictionary(RequestAuthentication requestAuthentication)
 		=> requestAuthentication.ToDictionary();
 }

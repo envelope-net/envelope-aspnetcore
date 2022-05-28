@@ -3,15 +3,16 @@
 namespace Envelope.AspNetCore.Middleware.Authorization;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-public abstract class PermissionAttribute : TypeFilterAttribute
+public abstract class PermissionAttribute<TIdentity> : TypeFilterAttribute
+	where TIdentity : struct
 {
 	protected PermissionAttribute()
-		: base(typeof(PermissionAuthorizationFilter))
+		: base(typeof(PermissionAuthorizationFilter<TIdentity>))
 	{
 	}
 
 	public PermissionAttribute(object[] tokens)
-		: base(typeof(PermissionAuthorizationFilter))
+		: base(typeof(PermissionAuthorizationFilter<TIdentity>))
 	{
 		AddArgument(new PermissionAuthorizationRequirement(tokens));
 		Order = Int32.MinValue;

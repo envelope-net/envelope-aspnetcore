@@ -11,7 +11,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Envelope.AspNetCore.Middleware.Tracking;
 
-public class RequestTrackingMiddleware
+public class RequestTrackingMiddleware<TIdentity>
+	where TIdentity : struct
 {
 	private readonly RequestDelegate _next;
 	private readonly RequestTrackingOptions _options;
@@ -20,7 +21,7 @@ public class RequestTrackingMiddleware
 	public RequestTrackingMiddleware(
 		RequestDelegate next,
 		IOptions<RequestTrackingOptions> options,
-		ILogger<RequestTrackingMiddleware> logger)
+		ILogger<RequestTrackingMiddleware<TIdentity>> logger)
 	{
 		_next = next ?? throw new ArgumentNullException(nameof(next));
 		_options = options?.Value ?? throw new ArgumentNullException(nameof(options));
@@ -38,7 +39,7 @@ public class RequestTrackingMiddleware
 			startTicks = StaticWatch.CurrentTicks;
 		}
 
-		var appCtx = context.RequestServices.GetRequiredService<IApplicationContext>();
+		var appCtx = context.RequestServices.GetRequiredService<IApplicationContext<TIdentity>>();
 		var traceInfo = appCtx.AddTraceFrame(TraceFrame.Create());
 
 		if (_options.LogRequest)
@@ -59,7 +60,7 @@ public class RequestTrackingMiddleware
 						canLog && _options.LogRequestBody && !bodyAsString,
 						canLog && _options.LogRequestFiles).ConfigureAwait(false);
 
-				AspNetLogWriter.Instance.WriteRequest(request);
+				AspNetLogWriter<TIdentity>.Instance.WriteRequest(request);
 			}
 			catch (Exception ex)
 			{
@@ -152,7 +153,7 @@ public class RequestTrackingMiddleware
 							elapsedMilliseconds,
 							_options.LogResponseHeaders);
 
-					AspNetLogWriter.Instance.WriteResponse(response);
+					AspNetLogWriter<TIdentity>.Instance.WriteResponse(response);
 				}
 			}
 			else //_options.LogResponseBody == false
@@ -173,7 +174,7 @@ public class RequestTrackingMiddleware
 		}
 	}
 
-	private bool LogResponse(HttpContext context, int statusCode, ITraceInfo traceInfo, long? startTicks, string? error)
+	private bool LogResponse(HttpContext context, int statusCode, ITraceInfo<TIdentity> traceInfo, long? startTicks, string? error)
 	{
 		decimal? elapsedMilliseconds = null;
 
@@ -195,7 +196,7 @@ public class RequestTrackingMiddleware
 				elapsedMilliseconds,
 				_options.LogResponseHeaders);
 
-		AspNetLogWriter.Instance.WriteResponse(response);
+		AspNetLogWriter<TIdentity>.Instance.WriteResponse(response);
 
 		return false;
 	}

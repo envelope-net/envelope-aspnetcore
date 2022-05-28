@@ -3,14 +3,13 @@ using Envelope.Web.Logging;
 
 namespace Envelope.AspNetCore.Logging.Internal;
 
-internal class SilentAspNetLogWriter<TIdentity> : IAspNetLogWriter<TIdentity>, IDisposable
-	where TIdentity : struct
+internal class SilentAspNetLogWriter : IAspNetLogWriter, IDisposable
 {
-	public static readonly IAspNetLogWriter<TIdentity> Instance = new SilentAspNetLogWriter<TIdentity>();
+	public static readonly IAspNetLogWriter Instance = new SilentAspNetLogWriter();
 
 	public void WriteRequest(RequestDto request) { }
 
-	public void WriteRequestAuthentication(RequestAuthentication<TIdentity> requestAuthentication) { }
+	public void WriteRequestAuthentication(RequestAuthentication requestAuthentication) { }
 
 	public void WriteResponse(ResponseDto response) { }
 

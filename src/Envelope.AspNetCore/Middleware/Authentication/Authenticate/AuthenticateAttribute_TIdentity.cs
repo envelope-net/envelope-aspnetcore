@@ -3,10 +3,11 @@
 namespace Envelope.AspNetCore.Middleware.Authentication.Authenticate;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-public abstract class AuthenticateAttribute : TypeFilterAttribute
+public abstract class AuthenticateAttribute<TIdentity> : TypeFilterAttribute
+	where TIdentity : struct
 {
 	public AuthenticateAttribute()
-		: base(typeof(AuthenticateAuthorizationFilter))
+		: base(typeof(AuthenticateAuthorizationFilter<TIdentity>))
 	{
 		AddArgument(new AuthenticateAuthorizationRequirement());
 		Order = int.MinValue;

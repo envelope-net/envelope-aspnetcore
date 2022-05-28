@@ -7,23 +7,24 @@ using Envelope.Web.Logging;
 
 namespace Envelope.AspNetCore.Logging;
 
-public class AspNetLogWriter : IAspNetLogWriter, IDisposable
+public class AspNetLogWriter<TIdentity> : IAspNetLogWriter<TIdentity>, IDisposable
+	where TIdentity : struct
 {
-	private static IAspNetLogWriter _instance = SilentAspNetLogWriter.Instance;
+	private static IAspNetLogWriter<TIdentity> _instance = SilentAspNetLogWriter<TIdentity>.Instance;
 
-	public static IAspNetLogWriter Instance
+	public static IAspNetLogWriter<TIdentity> Instance
 	{
 		get => _instance;
 		set => _instance = value ?? throw new ArgumentNullException(nameof(value));
 	}
 
 	private readonly RequestWriter? _requestWriter;
-	private readonly RequestAuthenticationWriter? _requestAuthenticationWriter;
+	private readonly RequestAuthenticationWriter<TIdentity>? _requestAuthenticationWriter;
 	private readonly ResponseWriter? _responseWriter;
 
 	internal AspNetLogWriter(
 		RequestWriter? requestWriter,
-		RequestAuthenticationWriter? requestAuthenticationWriter,
+		RequestAuthenticationWriter<TIdentity>? requestAuthenticationWriter,
 		ResponseWriter? responseWriter)
 	{
 		_requestWriter = requestWriter;
@@ -42,13 +43,13 @@ public class AspNetLogWriter : IAspNetLogWriter, IDisposable
 		_requestWriter.Write(request);
 	}
 
-	public void WriteRequestAuthentication(RequestAuthentication requestAuthentication)
+	public void WriteRequestAuthentication(RequestAuthentication<TIdentity> requestAuthentication)
 	{
 		if (requestAuthentication == null)
 			return;
 
 		if (_requestAuthenticationWriter == null)
-			throw new InvalidOperationException($"{nameof(RequestAuthenticationWriter)} was not configured");
+			throw new InvalidOperationException($"{nameof(RequestAuthenticationWriter<TIdentity>)} was not configured");
 
 		_requestAuthenticationWriter.Write(requestAuthentication);
 	}
@@ -66,7 +67,7 @@ public class AspNetLogWriter : IAspNetLogWriter, IDisposable
 
 	public static void CloseAndFlush()
 	{
-		var aspNetLogWriter = Interlocked.Exchange(ref _instance, SilentAspNetLogWriter.Instance);
+		var aspNetLogWriter = Interlocked.Exchange(ref _instance, SilentAspNetLogWriter<TIdentity>.Instance);
 		aspNetLogWriter?.Dispose();
 	}
 

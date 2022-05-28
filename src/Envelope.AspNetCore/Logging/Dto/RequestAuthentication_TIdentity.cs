@@ -2,13 +2,14 @@
 
 namespace Envelope.AspNetCore.Logging.Dto;
 
-public class RequestAuthentication : Serializer.IDictionaryObject
+public class RequestAuthentication<TIdentity> : Serializer.IDictionaryObject
+	where TIdentity : struct
 {
 	public Guid RuntimeUniqueKey { get; set; }
 	public DateTimeOffset CreatedUtc { get; set; }
 	public Guid? CorrelationId { get; set; }
 	public string? ExternalCorrelationId { get; set; }
-	public Guid? IdUser { get; set; }
+	public TIdentity? IdUser { get; set; }
 	public string? Roles { get; set; }
 	public string? Permissions { get; set; }
 
