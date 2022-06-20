@@ -19,7 +19,7 @@ namespace Envelope.AspNetCore.Extensions;
 
 public static partial class ServiceCollectionExtensions
 {
-	public static IServiceCollection AddApplicationContext(this IServiceCollection services,
+	public static IServiceCollection AddAspNetApplicationContext(this IServiceCollection services,
 		string systemName,
 		bool withQueryList = false,
 		bool withCookies = true,
@@ -99,7 +99,7 @@ public static partial class ServiceCollectionExtensions
 		return services;
 	}
 
-	public static IServiceCollection ConfigureEnvelopeMiddlewares<TAuth>(
+	public static IServiceCollection ConfigureAspNetMiddlewares<TAuth>(
 		this IServiceCollection services,
 		string systemName,
 		Action<RequestInitializationOptions>? configureRequestInitializationOptions = null,
@@ -110,7 +110,7 @@ public static partial class ServiceCollectionExtensions
 		Action<AuthenticationOptions>? configureAuthenticationOptions = null)
 		where TAuth : class, IAuthenticationManager
 	{
-		AddApplicationContext(services, systemName);
+		AddAspNetApplicationContext(services, systemName);
 
 		if (configureRequestInitializationOptions != null)
 			services.Configure(configureRequestInitializationOptions);
