@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Envelope.Web;
+using Microsoft.AspNetCore.Http;
 
 namespace Envelope.AspNetCore.Middleware.Tracking;
 
@@ -26,45 +27,8 @@ public class RequestTrackingOptions
 
 	public RequestTrackingOptions()
 	{
-		LoggedRequestAsStringContentTypes = new List<string>
-		{
-			"application/x-www-form-urlencoded",
-			"application/ecmascript",
-			"application/javascript",
-			"application/json",
-			"application/problem+json",
-			"application/jsonml+json",
-			"application/plain",
-			"application/vnd.dvb.service",
-			"application/xhtml+xml",
-			"application/x-javascript",
-			"application/xml",
-			"text/ecmascript",
-			"text/html",
-			"text/javascript",
-			"text/plain",
-			"text/xml"
-		};
-
-		LoggedResponseAsStringContentTypes = new List<string>
-		{
-			"application/x-www-form-urlencoded",
-			"application/ecmascript",
-			"application/javascript",
-			"application/json",
-			"application/problem+json",
-			"application/jsonml+json",
-			"application/plain",
-			"application/vnd.dvb.service",
-			"application/xhtml+xml",
-			"application/x-javascript",
-			"application/xml",
-			"text/ecmascript",
-			"text/html",
-			"text/javascript",
-			"text/plain",
-			"text/xml"
-		};
+		LoggedRequestAsStringContentTypes = ContentTypeHelper.StringContentTypes.ToList();
+		LoggedResponseAsStringContentTypes = ContentTypeHelper.StringContentTypes.ToList();
 	}
 
 	public bool CanLogRequest(HttpRequest request, out bool bodyAsString)
