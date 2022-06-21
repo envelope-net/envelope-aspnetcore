@@ -307,7 +307,7 @@ public static class AuthenticationService
 		return CreateEnvelopePrincipal(claimsIdentity, user, false, false, /*logger,*/ applicationContext, authenticationManager);
 	}
 
-	public static async Task<EnvelopePrincipal?> RecreateCookieIdentityAsync(HttpContext context, string? userName, string authenticationSchemeType)
+	public static async Task<EnvelopePrincipal?> RecreateCookieIdentityAsync(HttpContext context, string? userName, string authenticationSchemeType, ILogger logger)
 	{
 		if (string.IsNullOrWhiteSpace(userName))
 			return null;
