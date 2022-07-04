@@ -19,7 +19,7 @@ namespace Envelope.AspNetCore.Extensions;
 
 public static partial class ServiceCollectionExtensions
 {
-	public static IServiceCollection AddApplicationContext<TIdentity>(this IServiceCollection services,
+	public static IServiceCollection AddAspNetApplicationContext<TIdentity>(this IServiceCollection services,
 		string systemName,
 		bool withQueryList = false,
 		bool withCookies = true,
@@ -114,7 +114,7 @@ public static partial class ServiceCollectionExtensions
 		where TAuth : class, IAuthenticationManager<TIdentity>
 		where TIdentity : struct
 	{
-		AddApplicationContext<TIdentity>(services, systemName);
+		AddAspNetApplicationContext<TIdentity>(services, systemName);
 
 		if (configureRequestInitializationOptions != null)
 			services.Configure(configureRequestInitializationOptions);

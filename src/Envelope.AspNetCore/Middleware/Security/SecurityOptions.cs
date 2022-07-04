@@ -58,7 +58,7 @@ public class SecurityOptions
 			.SetHeader(ResponseHeaderOptions.XFrameOptions_SAMEORIGIN)
 			.SetHeader(ResponseHeaderOptions.XPermittedCrossDomainPolicies)
 			.SetHeader(ResponseHeaderOptions.XXssProtection)
-			.SetHeader(ResponseHeaderOptions.ExpectCT)
+			//.SetHeader(ResponseHeaderOptions.ExpectCT)
 			.SetHeader(ResponseHeaderOptions.FeaturePolicy)
 			//.SetHeader(ResponseHeaderOptions.ContentSecurityPolicy)
 			.SetHeader(ResponseHeaderOptions.RemoveSerever);
@@ -70,7 +70,7 @@ public class SecurityOptions
 			.SetHeader(ResponseHeaderOptions.XFrameOptions_DENY)
 			.SetHeader(ResponseHeaderOptions.XPermittedCrossDomainPolicies)
 			.SetHeader(ResponseHeaderOptions.XXssProtection)
-			.SetHeader(ResponseHeaderOptions.ExpectCT)
+			//.SetHeader(ResponseHeaderOptions.ExpectCT)
 			.SetHeader(ResponseHeaderOptions.FeaturePolicy)
 			.SetHeader(ResponseHeaderOptions.ContentSecurityPolicy.IgnoredPath(swaggerPath))
 			.SetHeader(ResponseHeaderOptions.RemoveSerever);
