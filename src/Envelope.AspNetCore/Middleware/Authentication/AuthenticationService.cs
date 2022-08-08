@@ -397,9 +397,9 @@ public static class AuthenticationService
 
 	#endregion withhout HttpContext
 
-	public static EnvelopePrincipal CreateAnonymousUser(string authenticationSchemeType, string sourceSystemName)
+	public static EnvelopePrincipal CreateAnonymousUser(string authenticationSchemeType, IApplicationContext applicationContext)
 	{
-		var user = new Envelope.Identity.AnonymousUser(TraceInfo.Create(sourceSystemName));
+		var user = new Envelope.Identity.AnonymousUser(TraceInfo.Create(applicationContext));
 
 		var claimsIdentity = new ClaimsIdentity(authenticationSchemeType);
 		claimsIdentity.AddClaim(new Claim(ClaimTypes.Name, user.Login));
