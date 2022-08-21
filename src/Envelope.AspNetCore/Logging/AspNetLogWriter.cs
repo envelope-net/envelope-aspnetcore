@@ -70,45 +70,45 @@ public class AspNetLogWriter : IAspNetLogWriter, IDisposable
 		aspNetLogWriter?.Dispose();
 	}
 
-	private bool disposed;
+	private bool _disposed;
 	protected virtual void Dispose(bool disposing)
 	{
-		if (!disposed)
+		if (_disposed)
+			return;
+
+		_disposed = true;
+
+		if (disposing)
 		{
-			if (disposing)
+			try
 			{
-				try
-				{
-					_requestWriter?.Dispose();
-				}
-				catch (Exception ex)
-				{
-					var msg = string.Format($"{nameof(LogWriter)}: Disposing {nameof(_requestWriter)} '{_requestWriter?.GetType().FullName ?? "null"}': {ex.ToStringTrace()}");
-					Serilog.Log.Logger.Error(ex, msg);
-				}
-
-				try
-				{
-					_requestAuthenticationWriter?.Dispose();
-				}
-				catch (Exception ex)
-				{
-					var msg = string.Format($"{nameof(LogWriter)}: Disposing {nameof(_requestAuthenticationWriter)} '{_requestAuthenticationWriter?.GetType().FullName ?? "null"}': {ex.ToStringTrace()}");
-					Serilog.Log.Logger.Error(ex, msg);
-				}
-
-				try
-				{
-					_responseWriter?.Dispose();
-				}
-				catch (Exception ex)
-				{
-					var msg = string.Format($"{nameof(LogWriter)}: Disposing {nameof(_responseWriter)} '{_responseWriter?.GetType().FullName ?? "null"}': {ex.ToStringTrace()}");
-					Serilog.Log.Logger.Error(ex, msg);
-				}
+				_requestWriter?.Dispose();
+			}
+			catch (Exception ex)
+			{
+				var msg = string.Format($"{nameof(LogWriter)}: Disposing {nameof(_requestWriter)} '{_requestWriter?.GetType().FullName ?? "null"}': {ex.ToStringTrace()}");
+				Serilog.Log.Logger.Error(ex, msg);
 			}
 
-			disposed = true;
+			try
+			{
+				_requestAuthenticationWriter?.Dispose();
+			}
+			catch (Exception ex)
+			{
+				var msg = string.Format($"{nameof(LogWriter)}: Disposing {nameof(_requestAuthenticationWriter)} '{_requestAuthenticationWriter?.GetType().FullName ?? "null"}': {ex.ToStringTrace()}");
+				Serilog.Log.Logger.Error(ex, msg);
+			}
+
+			try
+			{
+				_responseWriter?.Dispose();
+			}
+			catch (Exception ex)
+			{
+				var msg = string.Format($"{nameof(LogWriter)}: Disposing {nameof(_responseWriter)} '{_responseWriter?.GetType().FullName ?? "null"}': {ex.ToStringTrace()}");
+				Serilog.Log.Logger.Error(ex, msg);
+			}
 		}
 	}
 
