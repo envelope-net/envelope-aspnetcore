@@ -1,4 +1,5 @@
-﻿using Envelope.Identity;
+﻿using Envelope.Converters;
+using Envelope.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 
@@ -19,20 +20,13 @@ public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionAut
 	{
 		if (context.User is EnvelopePrincipal principal)
 		{
-			var hasPermission = _options.UseIntPermissions
-				? principal.HasAnyPermissionClaim(
-						requirement
-							.Tokens
-							.Where(x => x != null)
-							.Select(x => (Guid)x)
-							.ToArray())
-				: principal.HasAnyPermissionClaim(
-						requirement
-							.Tokens
-							.Where(x => x != null)
-							.Select(x => x.ToString())
-							.Cast<string>()
-							.ToArray());
+			var hasPermission =
+				_options.OnHasPermission(
+					principal,
+					requirement
+						.Tokens
+						.Where(x => x != null)
+						.Select(GuidConverter.ToGuid));
 
 			if (hasPermission)
 			{

@@ -14,6 +14,7 @@ using Envelope.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Authentication;
 
 namespace Envelope.AspNetCore.Extensions;
 
@@ -54,24 +55,38 @@ public static partial class ServiceCollectionExtensions
 				withCookies: withCookies,
 				withHeaders: withHeaders,
 				withForm: withForm,
-				cookieDataProtectionPurposes: AuthenticationService.GetDataProtectors(httpContext));
+				cookieDataProtectionPurposes: Authentication.AuthenticationService.GetDataProtectors(httpContext));
 			var appCtx = new ApplicationContext(traceInfo, appResources, requsetMetadata);
 			return appCtx;
 		});
 
-	public static IServiceCollection AddEnvelopeAuthentication<TAuthMngr, TCookieStore>(this IServiceCollection services, Action<AuthenticationOptions>? configureAuthenticationOptions)
+	public static IServiceCollection AddEnvelopeAuthentication<TAuthMngr, TCookieStore>(
+		this IServiceCollection services,
+		Action<Middleware.Authentication.AuthenticationOptions>? configureAuthenticationOptions,
+		Action<PermissionAuthorizationOptions>? configurePermissionAuthorization,
+		string? authenticationScheme = AuthenticationDefaults.AUTHENTICATION_SCHEME,
+		Action<AuthenticationBuilder>? configureAuthenticationBuilder = null)
 		where TAuthMngr : class, IAuthenticationManager
 		where TCookieStore : class, ICookieStore
 	{
 		services.TryAddSingleton<ICookieStore, TCookieStore>();
-		return AddEnvelopeAuthentication<TAuthMngr>(services, configureAuthenticationOptions, null);
+		return AddEnvelopeAuthentication<TAuthMngr>(services, configureAuthenticationOptions, configureAuthenticationBuilder, configurePermissionAuthorization, authenticationScheme, null);
 	}
 
-	public static IServiceCollection AddEnvelopeAuthentication<TAuthMngr>(this IServiceCollection services, Action<AuthenticationOptions>? configureAuthenticationOptions, ICookieStore? cookieStore = null)
+	public static IServiceCollection AddEnvelopeAuthentication<TAuthMngr>(
+		this IServiceCollection services,
+		Action<Middleware.Authentication.AuthenticationOptions>? configureAuthenticationOptions,
+		Action<AuthenticationBuilder>? configureAuthenticationBuilder,
+		Action<PermissionAuthorizationOptions>? configurePermissionAuthorization,
+		string? authenticationScheme = AuthenticationDefaults.AUTHENTICATION_SCHEME,
+		ICookieStore? cookieStore = null)
 		where TAuthMngr : class, IAuthenticationManager
 	{
 		if (configureAuthenticationOptions == null)
 			return services;
+
+		if (!string.IsNullOrWhiteSpace(authenticationScheme))
+			AuthenticationDefaults.AuthenticationScheme = authenticationScheme;
 
 		var authenticationBuilder =
 			services.AddAuthentication(opt =>
@@ -81,11 +96,16 @@ public static partial class ServiceCollectionExtensions
 				opt.DefaultForbidScheme = AuthenticationDefaults.AuthenticationScheme;
 			});
 
-		authenticationBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IPostConfigureOptions<AuthenticationOptions>, PostConfigureAuthenticationOptions>());
-		authenticationBuilder.AddScheme<AuthenticationOptions, EnvelopeAuthenticationHandler>(
+		configureAuthenticationBuilder?.Invoke(authenticationBuilder);
+
+		authenticationBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IPostConfigureOptions<Middleware.Authentication.AuthenticationOptions>, PostConfigureAuthenticationOptions>());
+		authenticationBuilder.AddScheme<Middleware.Authentication.AuthenticationOptions, EnvelopeAuthenticationHandler>(
 			AuthenticationDefaults.AuthenticationScheme,
 			displayName: null,
 			configureOptions: configureAuthenticationOptions);
+
+		if (configurePermissionAuthorization != null)
+			services.Configure(configurePermissionAuthorization);
 
 		services.AddScoped<IAuthenticationManager, TAuthMngr>();
 		services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
@@ -107,7 +127,10 @@ public static partial class ServiceCollectionExtensions
 		Action<ExceptionHandlerOptions>? configureExceptionHandlerOptions = null,
 		Action<HostNormalizerOptions>? configureHostNormalizerOptions = null,
 		Action<RequestTrackingOptions>? configureRequestTracking = null,
-		Action<AuthenticationOptions>? configureAuthenticationOptions = null)
+		Action<AuthenticationBuilder>? configureAuthenticationBuilder = null,
+		Action<Middleware.Authentication.AuthenticationOptions>? configureAuthenticationOptions = null,
+		Action<PermissionAuthorizationOptions>? configurePermissionAuthorization = null,
+		string? authenticationScheme = AuthenticationDefaults.AUTHENTICATION_SCHEME)
 		where TAuth : class, IAuthenticationManager
 	{
 		AddAspNetApplicationContext(services, systemName);
@@ -128,7 +151,7 @@ public static partial class ServiceCollectionExtensions
 			services.Configure(configureRequestTracking);
 
 		if (configureAuthenticationOptions != null)
-			AddEnvelopeAuthentication<TAuth>(services, configureAuthenticationOptions, null);
+			AddEnvelopeAuthentication<TAuth>(services, configureAuthenticationOptions, configureAuthenticationBuilder, configurePermissionAuthorization, authenticationScheme, null);
 
 		return services;
 	}

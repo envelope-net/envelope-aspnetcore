@@ -397,9 +397,9 @@ public static class AuthenticationService
 
 	#endregion withhout HttpContext
 
-	public static EnvelopePrincipal CreateAnonymousUser(string authenticationSchemeType, string sourceSystemName)
+	public static EnvelopePrincipal CreateAnonymousUser(string authenticationSchemeType, IApplicationContext applicationContext)
 	{
-		var user = new Envelope.Identity.AnonymousUser(TraceInfo.Create(sourceSystemName));
+		var user = new Envelope.Identity.AnonymousUser(TraceInfo.Create(applicationContext));
 
 		var claimsIdentity = new ClaimsIdentity(authenticationSchemeType);
 		claimsIdentity.AddClaim(new Claim(ClaimTypes.Name, user.Login));
@@ -421,7 +421,7 @@ public static class AuthenticationService
 		if (identity == null || authenticatedUser == null)
 			return null;
 
-		var EnvelopeIdentity = new EnvelopeIdentity(
+		var envelopeIdentity = new EnvelopeIdentity(
 			identity,
 			authenticatedUser.UserId,
 			authenticatedUser.Login,
@@ -440,25 +440,25 @@ public static class AuthenticationService
 			{
 				CorrelationId = authenticatedUser.TraceInfo.CorrelationId,
 				ExternalCorrelationId = authenticatedUser.TraceInfo.ExternalCorrelationId,
-				IdUser = EnvelopeIdentity.UserId,
+				IdUser = envelopeIdentity.UserId,
 				Roles = authenticationManager.LogRoles
-				? ((0 < EnvelopeIdentity.RoleIds?.Count)
-					? System.Text.Json.JsonSerializer.Serialize(EnvelopeIdentity.RoleIds)
-					: (0 < EnvelopeIdentity.Roles?.Count ? System.Text.Json.JsonSerializer.Serialize(EnvelopeIdentity.Roles) : null))
+				? ((0 < envelopeIdentity.RoleIds?.Count)
+					? System.Text.Json.JsonSerializer.Serialize(envelopeIdentity.RoleIds)
+					: (0 < envelopeIdentity.Roles?.Count ? System.Text.Json.JsonSerializer.Serialize(envelopeIdentity.Roles) : null))
 				: null,
 				Permissions = authenticationManager.LogPermissions
-				? ((0 < EnvelopeIdentity.PermissionIds?.Count)
-					? System.Text.Json.JsonSerializer.Serialize(EnvelopeIdentity.PermissionIds)
-					: (0 < EnvelopeIdentity.Permissions?.Count ? System.Text.Json.JsonSerializer.Serialize(EnvelopeIdentity.Permissions) : null))
+				? ((0 < envelopeIdentity.PermissionIds?.Count)
+					? System.Text.Json.JsonSerializer.Serialize(envelopeIdentity.PermissionIds)
+					: (0 < envelopeIdentity.Permissions?.Count ? System.Text.Json.JsonSerializer.Serialize(envelopeIdentity.Permissions) : null))
 				: null
 			});
 		}
 
-		var EnvelopePrincipal = new EnvelopePrincipal(EnvelopeIdentity);
+		var envelopePrincipal = new EnvelopePrincipal(envelopeIdentity);
 
 		if (applicationContext != null)
-			applicationContext.AddTraceFrame(TraceInfo.Create(authenticatedUser.TraceInfo).TraceFrame, EnvelopePrincipal);
+			applicationContext.AddTraceFrame(TraceInfo.Create(authenticatedUser.TraceInfo).TraceFrame, envelopePrincipal);
 
-		return EnvelopePrincipal;
+		return envelopePrincipal;
 	}
 }

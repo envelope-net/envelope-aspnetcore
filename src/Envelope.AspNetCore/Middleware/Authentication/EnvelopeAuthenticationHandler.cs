@@ -915,8 +915,8 @@ public class EnvelopeAuthenticationHandler :
 			if (0 < Options.RequestAuthenticationOptions?.AnonymousUrlPathPrefixes?.Count
 				&& Options.RequestAuthenticationOptions.AnonymousUrlPathPrefixes.Any(x => path.StartsWith(x)))
 			{
-				var applicationContext = Context.RequestServices.GetService<IApplicationContext>();
-				var principal = Envelope.AspNetCore.Authentication.AuthenticationService.CreateAnonymousUser(Scheme.Name, applicationContext?.SourceSystemName!);
+				var applicationContext = Context.RequestServices.GetRequiredService<IApplicationContext>();
+				var principal = Envelope.AspNetCore.Authentication.AuthenticationService.CreateAnonymousUser(Scheme.Name, applicationContext);
 				var ticket = new AuthenticationTicket(principal, AuthenticationOptions.Scheme);
 				return AuthenticateResult.Success(ticket);
 			}
