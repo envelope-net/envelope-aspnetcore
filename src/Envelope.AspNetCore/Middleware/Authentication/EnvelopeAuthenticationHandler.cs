@@ -592,7 +592,6 @@ public class EnvelopeAuthenticationHandler :
 		if (IsAjaxRequest(context.Request))
 		{
 			context.Response.Headers[HeaderNames.Location] = context.RedirectUri;
-			context.Response.StatusCode = 401;
 		}
 		else
 		{
