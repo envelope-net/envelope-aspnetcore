@@ -161,7 +161,14 @@ public class ExceptionHandlerMiddleware
 				context.Features.Set<IExceptionHandlerPathFeature>(exceptionHandlerFeature);
 			}
 
-			context.Response.StatusCode = statusCode == StatusCodes.Status404NotFound ? statusCode : StatusCodes.Status500InternalServerError;
+			if (statusCode != StatusCodes.Status401Unauthorized
+				&& statusCode != StatusCodes.Status403Forbidden
+				&& statusCode != StatusCodes.Status404NotFound)
+			{
+				statusCode = StatusCodes.Status500InternalServerError;
+			}
+
+			context.Response.StatusCode = statusCode;
 			context.Response.OnStarting(_clearCacheHeadersDelegate, context.Response);
 
 			await _next(context).ConfigureAwait(false);
