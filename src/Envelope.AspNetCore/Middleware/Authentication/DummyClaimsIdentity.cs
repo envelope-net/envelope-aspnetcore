@@ -28,6 +28,7 @@ public class DummyClaimsIdentity
 			Name,
 			DisplayName,
 			UserData,
+			false,
 			new List<string> { "Role1" },
 			new List<Guid> { default },
 			new List<string>() { "action1" },

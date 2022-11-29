@@ -428,6 +428,7 @@ public static class AuthenticationService<TIdentity>
 			authenticatedUser.Login,
 			authenticatedUser.DisplayName,
 			authenticatedUser.UserData,
+			authenticatedUser.IsSuperAdmin,
 			authenticatedUser.Roles,
 			authenticatedUser.RoleIds,
 			authenticatedUser.Permissions,
