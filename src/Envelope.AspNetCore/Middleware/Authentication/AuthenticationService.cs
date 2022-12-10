@@ -427,6 +427,7 @@ public static class AuthenticationService
 			authenticatedUser.Login,
 			authenticatedUser.DisplayName,
 			authenticatedUser.UserData,
+			authenticatedUser.IsSuperAdmin,
 			authenticatedUser.Roles,
 			authenticatedUser.RoleIds,
 			authenticatedUser.Permissions,

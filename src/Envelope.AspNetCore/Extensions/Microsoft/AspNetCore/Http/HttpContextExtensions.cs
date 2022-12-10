@@ -1,25 +1,39 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Envelope.Audit;
+using Microsoft.AspNetCore.Http;
 
 namespace Envelope.Extensions;
 
 public static class HttpContextExtensions
 {
-	private static readonly string ApplicationEntryItemKey = "__Envelope.ApplicationEntry-ID__";
+	private static readonly string ApplicationEntryIDKey = "__Envelope.ApplicationEntry-ID__";
+	private static readonly string ApplicationEntryToken = "__Envelope.ApplicationEntry-Token__";
 
-	public static void AddIdApplicationEntry(this HttpContext context, Guid idApplicationEntry)
-		=> AddHttpContextItemIfNotExists(context, ApplicationEntryItemKey, idApplicationEntry);
+	public static bool TryAddIdApplicationEntry(this HttpContext context, Guid idApplicationEntry)
+		=> TryAddHttpContextItemIfNotExists(context, ApplicationEntryIDKey, idApplicationEntry);
 
 	public static void SetIdApplicationEntry(this HttpContext context, Guid idApplicationEntry)
-		=> SetHttpContextItem(context, ApplicationEntryItemKey, idApplicationEntry);
+		=> SetHttpContextItem(context, ApplicationEntryIDKey, idApplicationEntry);
 
 	public static Guid? GetIdApplicationEntry(this HttpContext context, Guid? defaultIdApplicationEntry = null)
-		=> GetHttpContextItem<string, Guid?>(context, ApplicationEntryItemKey, defaultIdApplicationEntry);
+		=> GetHttpContextItem<string, Guid?>(context, ApplicationEntryIDKey, defaultIdApplicationEntry);
 
 	public static bool HasIdApplicationEntry(this HttpContext context)
-		=> HasHttpContextItem(context, ApplicationEntryItemKey);
+		=> HasHttpContextItem(context, ApplicationEntryIDKey);
+
+	public static bool TryAddApplicationEntryToken(this HttpContext context, ApplicationEntryToken token)
+		=> TryAddHttpContextItemIfNotExists(context, ApplicationEntryToken, token);
+
+	public static void SetApplicationEntryToken(this HttpContext context, ApplicationEntryToken token)
+		=> SetHttpContextItem(context, ApplicationEntryToken, token);
+
+	public static ApplicationEntryToken? GetApplicationEntryToken(this HttpContext context)
+		=> GetHttpContextItem<string, ApplicationEntryToken?>(context, ApplicationEntryToken, null);
+
+	public static bool HasApplicationEntryToken(this HttpContext context)
+		=> HasHttpContextItem(context, ApplicationEntryToken);
 
 
-	private static void AddHttpContextItemIfNotExists<TKey, TValue>(HttpContext context, TKey key, TValue? value)
+	private static bool TryAddHttpContextItemIfNotExists<TKey, TValue>(HttpContext context, TKey key, TValue? value)
 	{
 		if (context == null)
 			throw new ArgumentNullException(nameof(context));
@@ -27,7 +41,7 @@ public static class HttpContextExtensions
 		if (key == null)
 			throw new ArgumentNullException(nameof(key));
 
-		context.Items.TryAdd(key, value);
+		return context.Items.TryAdd(key, value);
 	}
 
 	private static void SetHttpContextItem<TKey, TValue>(HttpContext context, TKey key, TValue value)

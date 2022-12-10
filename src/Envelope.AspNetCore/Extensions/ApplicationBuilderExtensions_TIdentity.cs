@@ -1,7 +1,6 @@
 ﻿using Envelope.AspNetCore.Middleware.Exceptions;
 using Envelope.AspNetCore.Middleware.HostNormalizer;
 using Envelope.AspNetCore.Middleware.Initialization;
-using Envelope.AspNetCore.Middleware.Security;
 using Envelope.AspNetCore.Middleware.Tracking;
 using Envelope.Logging.PostgreSql;
 using Microsoft.AspNetCore.Builder;
