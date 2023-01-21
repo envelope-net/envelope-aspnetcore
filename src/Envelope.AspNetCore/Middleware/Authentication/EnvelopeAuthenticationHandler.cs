@@ -627,6 +627,7 @@ public class EnvelopeAuthenticationHandler :
 					AuthenticationType.Request => await HandleRequestAuthenticateAsync().ConfigureAwait(false),
 					_ => throw new NotImplementedException($"{nameof(AuthenticationType)}.{Options.AuthenticationFlow[i]}"),
 				};
+
 				if (result.Succeeded)
 					return result;
 
