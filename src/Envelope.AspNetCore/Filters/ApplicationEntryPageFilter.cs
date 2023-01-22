@@ -28,7 +28,7 @@ public class ApplicationEntryPageFilter : IAsyncPageFilter, IOrderedFilter
 
 			if (!_methodInfoDict.Value.TryGetValue(methodInfo, out var token))
 			{
-				token = new ApplicationEntryToken(applicationEntryAttribute.Token, applicationEntryAttribute.Version)
+				token = new ApplicationEntryToken(applicationEntryAttribute.Token, applicationEntryAttribute.Version, applicationEntryAttribute.SourceFilePath)
 				{
 					MethodInfo = ((MethodBase?)methodInfo)?.GetMethodFullName(),
 					MainEntityName = applicationEntryAttribute.EntityName,
@@ -38,7 +38,7 @@ public class ApplicationEntryPageFilter : IAsyncPageFilter, IOrderedFilter
 
 				try
 				{
-					var dbToken = await DbLogWriter.Instance.GetApplicationEntryTokenAsync(token.Token, token.Version);
+					var dbToken = await DbLogWriter.Instance.GetApplicationEntryTokenAsync(token.Token, token.Version, token.SourceFilePath);
 					if (dbToken == null)
 					{
 						DbLogWriter.Instance.WriteApplicationEntryToken(token.WriteToHistory());

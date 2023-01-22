@@ -9,7 +9,7 @@ namespace Envelope.AspNetCore.Extensions;
 
 public static partial class ApplicationBuilderExtensions
 {
-	public static IApplicationBuilder UseEnvelopeAspNetCore<TIdentity>(this IApplicationBuilder app)
+	public static IApplicationBuilder UseEnvelopeAspNetCore<TIdentity>(this IApplicationBuilder app, string applicationName)
 		where TIdentity : struct
 	{
 		if (app == null)
@@ -19,7 +19,7 @@ public static partial class ApplicationBuilderExtensions
 		//var logger = loggerFactory.CreateLogger<RequestInitializationMiddleware>();
 		//logger.LogEnvironmentInfo();
 
-		DbLogWriter.Instance.WriteEnvironmentInfo();
+		DbLogWriter.Instance.WriteEnvironmentInfo(applicationName);
 
 		app.UseMiddleware<RequestInitializationMiddleware<TIdentity>>();
 

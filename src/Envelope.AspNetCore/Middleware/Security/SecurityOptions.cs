@@ -63,15 +63,28 @@ public class SecurityOptions
 			//.SetHeader(ResponseHeaderOptions.ContentSecurityPolicy)
 			.SetHeader(ResponseHeaderOptions.RemoveSerever);
 
-	public SecurityOptions SetDefaultWebApiOptions(string swaggerPath = "/swagger")
-		=> this
+	public SecurityOptions SetDefaultWebApiOptions(bool allowCSP = true, params string[] cspIgnoredPaths)
+	{
+		this
 			.SetHeader(ResponseHeaderOptions.ReferrerPolicy)
 			.SetHeader(ResponseHeaderOptions.XContentTypeOptions)
 			.SetHeader(ResponseHeaderOptions.XFrameOptions_DENY)
 			.SetHeader(ResponseHeaderOptions.XPermittedCrossDomainPolicies)
 			.SetHeader(ResponseHeaderOptions.XXssProtection)
 			//.SetHeader(ResponseHeaderOptions.ExpectCT)
-			.SetHeader(ResponseHeaderOptions.FeaturePolicy)
-			.SetHeader(ResponseHeaderOptions.ContentSecurityPolicy.IgnoredPath(swaggerPath))
+			.SetHeader(ResponseHeaderOptions.FeaturePolicy);
+
+		if (allowCSP)
+			this
+				.SetHeader(ResponseHeaderOptions.ContentSecurityPolicy
+					.IgnoredPath(
+						(cspIgnoredPaths == null || cspIgnoredPaths.Length == 0)
+							? new string[] { "/swagger" }
+							: cspIgnoredPaths));
+
+		this
 			.SetHeader(ResponseHeaderOptions.RemoveSerever);
+
+		return this;
+	}
 }

@@ -1,9 +1,13 @@
 ﻿using Envelope.Extensions;
 using Microsoft.AspNetCore.Http;
+using System.IO;
 using static Envelope.AspNetCore.Middleware.Security.ResponseHeaderOptions;
 
 namespace Envelope.AspNetCore.Middleware.Security;
 
+#if NET6_0_OR_GREATER
+[Envelope.Serializer.JsonPolymorphicConverter]
+#endif
 public interface IResponseHeaderOptions
 {
 	bool Remove { get; }
@@ -16,7 +20,7 @@ public interface IResponseHeaderOptions
 
 	ResponseHeaderOptions ApplyToContentType(string contentType);
 	ResponseHeaderOptions AllowOnlyPath(string path);
-	ResponseHeaderOptions IgnoredPath(string path);
+	ResponseHeaderOptions IgnoredPath(params string[] paths);
 }
 
 public class ResponseHeaderOptions : IResponseHeaderOptions
@@ -54,9 +58,7 @@ public class ResponseHeaderOptions : IResponseHeaderOptions
 		if (string.IsNullOrWhiteSpace(contentType))
 			return this;
 
-		if (ApplyOnlyToContentTypes == null)
-			ApplyOnlyToContentTypes = new List<string>();
-
+		ApplyOnlyToContentTypes ??= new List<string>();
 		ApplyOnlyToContentTypes.AddUniqueItem(contentType);
 		return this;
 	}
@@ -66,22 +68,18 @@ public class ResponseHeaderOptions : IResponseHeaderOptions
 		if (string.IsNullOrWhiteSpace(path))
 			return this;
 
-		if (AllowedPaths == null)
-			AllowedPaths = new List<string>();
-
+		AllowedPaths ??= new List<string>();
 		AllowedPaths.AddUniqueItem(path);
 		return this;
 	}
 
-	public ResponseHeaderOptions IgnoredPath(string path)
+	public ResponseHeaderOptions IgnoredPath(params string[] paths)
 	{
-		if (string.IsNullOrWhiteSpace(path))
+		if (paths == null || paths.Length == 0)
 			return this;
 
-		if (IgnoredPaths == null)
-			IgnoredPaths = new List<string>();
-
-		IgnoredPaths.AddUniqueItem(path);
+		IgnoredPaths ??= new List<string>();
+		IgnoredPaths.AddUniqueRange(paths.Where(x => !string.IsNullOrWhiteSpace(x)));
 		return this;
 	}
 

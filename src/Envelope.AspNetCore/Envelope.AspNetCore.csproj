@@ -19,7 +19,7 @@
     <Authors>Tomas Pilat</Authors>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\Envelope.snk</AssemblyOriginatorKeyFile>
-    <Version>1.1.9</Version>
+    <Version>1.1.11</Version>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -39,8 +39,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Envelope.Hosting" Version="1.1.9" />
-		<PackageReference Include="Envelope.Logging.PostgreSql" Version="1.1.6" />
+		<PackageReference Include="Envelope.Hosting" Version="1.1.12" />
+		<PackageReference Include="Envelope.Logging.PostgreSql" Version="1.1.8" />
+		<PackageReference Include="Envelope.Services" Version="1.1.11" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.11" />
 		<PackageReference Include="Microsoft.AspNetCore.Authorization" Version="6.0.11" />
   		<PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.4.27">

@@ -86,6 +86,13 @@ public class ExceptionHandlerMiddleware
 
 	private async Task HandleExceptionAsync(ITraceInfo traceInfo, HttpContext context, ExceptionDispatchInfo? edi)
 	{
+		try
+		{
+			var uri = context.Request.GetUri().AbsoluteUri;
+			traceInfo.SetContextProperty("uri", $"ExceptionHandler: {uri}");
+		}
+		catch { }
+
 		var statusCode = context.Response.StatusCode;
 		var ex = edi?.SourceException;
 		var error = _logger.LogErrorMessage(traceInfo, x => x.ExceptionInfo(ex).Detail($"StatusCode = {statusCode}"), true);
