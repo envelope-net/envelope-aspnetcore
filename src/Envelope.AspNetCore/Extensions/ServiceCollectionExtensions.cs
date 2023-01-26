@@ -64,13 +64,21 @@ public static partial class ServiceCollectionExtensions
 		this IServiceCollection services,
 		Action<Middleware.Authentication.AuthenticationOptions>? configureAuthenticationOptions,
 		Action<PermissionAuthorizationOptions>? configurePermissionAuthorization,
+		bool addAuthorizationWithDefaultFallbackPolicy = false,
 		string? authenticationScheme = AuthenticationDefaults.AUTHENTICATION_SCHEME,
 		Action<AuthenticationBuilder>? configureAuthenticationBuilder = null)
 		where TAuthMngr : class, IAuthenticationManager
 		where TCookieStore : class, ICookieStore
 	{
 		services.TryAddSingleton<ICookieStore, TCookieStore>();
-		return AddEnvelopeAuthentication<TAuthMngr>(services, configureAuthenticationOptions, configureAuthenticationBuilder, configurePermissionAuthorization, authenticationScheme, null);
+		return AddEnvelopeAuthentication<TAuthMngr>(
+			services,
+			configureAuthenticationOptions,
+			configureAuthenticationBuilder,
+			configurePermissionAuthorization,
+			addAuthorizationWithDefaultFallbackPolicy,
+			authenticationScheme,
+			null);
 	}
 
 	public static IServiceCollection AddEnvelopeAuthentication<TAuthMngr>(
@@ -78,6 +86,7 @@ public static partial class ServiceCollectionExtensions
 		Action<Middleware.Authentication.AuthenticationOptions>? configureAuthenticationOptions,
 		Action<AuthenticationBuilder>? configureAuthenticationBuilder,
 		Action<PermissionAuthorizationOptions>? configurePermissionAuthorization,
+		bool addAuthorizationWithDefaultFallbackPolicy = false,
 		string? authenticationScheme = AuthenticationDefaults.AUTHENTICATION_SCHEME,
 		ICookieStore? cookieStore = null)
 		where TAuthMngr : class, IAuthenticationManager
@@ -103,6 +112,14 @@ public static partial class ServiceCollectionExtensions
 			AuthenticationDefaults.AuthenticationScheme,
 			displayName: null,
 			configureOptions: configureAuthenticationOptions);
+
+		if (addAuthorizationWithDefaultFallbackPolicy)
+		{
+			services.AddAuthorization(options =>
+			{
+				options.FallbackPolicy = options.DefaultPolicy;
+			});
+		}
 
 		if (configurePermissionAuthorization != null)
 			services.Configure(configurePermissionAuthorization);
@@ -130,6 +147,7 @@ public static partial class ServiceCollectionExtensions
 		Action<AuthenticationBuilder>? configureAuthenticationBuilder = null,
 		Action<Middleware.Authentication.AuthenticationOptions>? configureAuthenticationOptions = null,
 		Action<PermissionAuthorizationOptions>? configurePermissionAuthorization = null,
+		bool addAuthorizationWithDefaultFallbackPolicy = false,
 		string? authenticationScheme = AuthenticationDefaults.AUTHENTICATION_SCHEME)
 		where TAuth : class, IAuthenticationManager
 	{
@@ -151,7 +169,14 @@ public static partial class ServiceCollectionExtensions
 			services.Configure(configureRequestTracking);
 
 		if (configureAuthenticationOptions != null)
-			AddEnvelopeAuthentication<TAuth>(services, configureAuthenticationOptions, configureAuthenticationBuilder, configurePermissionAuthorization, authenticationScheme, null);
+			AddEnvelopeAuthentication<TAuth>(
+				services,
+				configureAuthenticationOptions,
+				configureAuthenticationBuilder,
+				configurePermissionAuthorization,
+				addAuthorizationWithDefaultFallbackPolicy,
+				authenticationScheme,
+				null);
 
 		return services;
 	}

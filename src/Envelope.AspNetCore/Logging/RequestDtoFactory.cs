@@ -1,5 +1,6 @@
 ﻿using Envelope.Web.Logging;
 using Microsoft.AspNetCore.Http;
+using System.Text;
 
 namespace Envelope.AspNetCore.Logging;
 
@@ -32,6 +33,7 @@ public static class RequestDtoFactory
 		try { request.Method = httpRequest.Method; } catch { }
 		try { request.Path = httpRequest.Path; } catch { }
 		try { request.QueryString = httpRequest.QueryString.ToString(); } catch { }
+		try { request.ContentType = httpRequest.ContentType; } catch { }
 
 		if (logRequestHeaders)
 		{
@@ -67,7 +69,29 @@ public static class RequestDtoFactory
 				var requestBodyStream = new MemoryStream();
 				await httpRequest.Body.CopyToAsync(requestBodyStream).ConfigureAwait(false);
 				requestBodyStream.Seek(0, SeekOrigin.Begin);
-				request.Body = await (new StreamReader(requestBodyStream /* TODO , encoding*/)).ReadToEndAsync();
+
+				//System.Net.Http.Headers
+				Encoding? encoding = null;
+				if (!string.IsNullOrWhiteSpace(request.ContentType))
+				{
+					try
+					{
+						if (Microsoft.Net.Http.Headers.MediaTypeHeaderValue.TryParse(request.ContentType.TrimEnd(';'), out var mediaTypeHeaderValue))
+						{
+							Encoding.GetEncoding(mediaTypeHeaderValue.Charset.ToString());
+						}
+					}
+					catch { }
+				}
+
+				if (encoding == null)
+				{
+					request.Body = await new StreamReader(requestBodyStream).ReadToEndAsync();
+				}
+				else
+				{
+					request.Body = await new StreamReader(requestBodyStream, encoding).ReadToEndAsync();
+				}
 
 				if (string.IsNullOrWhiteSpace(request.Body))
 					request.Body = null;
