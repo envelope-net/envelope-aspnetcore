@@ -78,7 +78,10 @@ public static class RequestDtoFactory
 					{
 						if (Microsoft.Net.Http.Headers.MediaTypeHeaderValue.TryParse(request.ContentType.TrimEnd(';'), out var mediaTypeHeaderValue))
 						{
-							Encoding.GetEncoding(mediaTypeHeaderValue.Charset.ToString());
+							var charset = mediaTypeHeaderValue.Charset.ToString();
+
+							if (!string.IsNullOrWhiteSpace(charset))
+								Encoding.GetEncoding(mediaTypeHeaderValue.Charset.ToString());
 						}
 					}
 					catch { }
