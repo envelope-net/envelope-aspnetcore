@@ -24,6 +24,7 @@ public static class ResponseDtoFactory
 			CorrelationId = correlationId,
 			ExternalCorrelationId = externalCorrelationId,
 			StatusCode = statusCode,
+			ContentType = httpResponse.ContentType,
 			Body = string.IsNullOrWhiteSpace(body)
 				? null
 				: body,
