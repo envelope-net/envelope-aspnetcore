@@ -22,10 +22,10 @@ public class PermissionAuthorizationFilter<TIdentity> : Attribute, IAsyncAuthori
 	public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
 	{
 		var controllerActionDescriptor = (ControllerActionDescriptor)context.ActionDescriptor;
-		var premission = _requirement?.Tokens?.Select(x => x.ToString()).ToList();
+		var premissions = _requirement?.Tokens?.Select(x => x.ToString()).ToList();
 
-		if (premission != null && 0 < premission.Count)
-			context.HttpContext.Items[Envelope.AspNetCore.Defaults.Keys.Premission] = premission;
+		if (premissions != null && 0 < premissions.Count)
+			context.HttpContext.Items[Envelope.AspNetCore.Defaults.Keys.AttributePermissions] = premissions;
 
 		await next().ConfigureAwait(false);
 	}
