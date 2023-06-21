@@ -232,7 +232,7 @@ public static class AuthenticationService
 			principal
 				.Claims
 				.Where(c => EnvelopeIdentity.IsEnvelopeClaim(c)
-					&& string.Equals(c.Type, EnvelopeIdentity.ROLE_CLAIM_NAME, StringComparison.OrdinalIgnoreCase));
+					&& string.Equals(c.Type, ClaimTypes.Role, StringComparison.OrdinalIgnoreCase));
 
 		var roleIdClaims =
 			principal

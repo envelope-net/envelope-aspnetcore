@@ -4,6 +4,6 @@ public static class Defaults
 {
 	public static class Keys
 	{
-		public const string Premission = "premission";
+		public const string AttributePermissions = "Envelope.AspNetCore.AttributePermissions";
 	}
 }

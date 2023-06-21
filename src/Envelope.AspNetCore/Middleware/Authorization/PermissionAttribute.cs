@@ -14,7 +14,7 @@ public abstract class PermissionAttribute : TypeFilterAttribute
 		: base(typeof(PermissionAuthorizationFilter))
 	{
 		AddArgument(new PermissionAuthorizationRequirement(tokens));
-		Order = Int32.MinValue;
+		Order = int.MinValue;
 	}
 
 	protected void AddArgument(object value)

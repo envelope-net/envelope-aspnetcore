@@ -8,7 +8,7 @@ namespace Envelope.Extensions;
 
 public static class HttpRequestExtensions
 {
-	[return: NotNullIfNotNull("request")]
+	[return: NotNullIfNotNull(nameof(request))]
 	public static Uri? GetUri(this HttpRequest request)
 	{
 		if (request == null)
@@ -36,7 +36,7 @@ public static class HttpRequestExtensions
 		return uriBuilder.Uri;
 	}
 
-	[return: NotNullIfNotNull("request")]
+	[return: NotNullIfNotNull(nameof(request))]
 	public static IRequestMetadata? ToRequestMetadata(
 		this HttpRequest request,
 		bool withQueryList = false,
